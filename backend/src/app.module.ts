@@ -11,6 +11,9 @@ import { ServiceModule } from './service/service.module';
 import { BarberController } from './barber/barber.controller';
 import { BarberModule } from './barber/barber.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { BarberAuthController } from './barber-auth/barber-auth.controller';
+import { BarberAuthService } from './barber-auth/barber-auth.service';
+import { BarberAuthModule } from './barber-auth/barber-auth.module';
 
 @Module({
   imports: [
@@ -28,8 +31,9 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
     ServiceModule,
     BarberModule,
     AdminAuthModule,
+    BarberAuthModule,
   ],
-  controllers: [AppController, BarberController],
-  providers: [AppService],
+  controllers: [AppController, BarberController, BarberAuthController],
+  providers: [AppService, BarberAuthService],
 })
 export class AppModule {}
