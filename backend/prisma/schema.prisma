@@ -72,7 +72,7 @@ model Appointment {
   service       Service      @relation(fields: [serviceId], references: [id])
 
   attendances   Attendance[]
-
+  @@unique([customerId])
   @@unique([barberId, appointmentAt])
 }
 
