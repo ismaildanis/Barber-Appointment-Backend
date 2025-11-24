@@ -78,7 +78,7 @@ export class AuthService
 
         return {
             message: "Giriş başarılı",
-            userId: customer.id,
+            customerId: customer.id,
             accessToken,
             refreshToken,
         }
@@ -106,13 +106,13 @@ export class AuthService
 
     async logout(customerId: number)
     {
-        const user = await this.prisma.customer.findUnique({
+        const customer = await this.prisma.customer.findUnique({
             where: {
                 id: customerId,
             }
         })
 
-        if(!user){
+        if(!customer){
             throw new UnauthorizedException("Kullanıcı bulunamadı")
         }
         
