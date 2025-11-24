@@ -10,6 +10,7 @@ import { AppointmentModule } from './appointment/appointment.module';
 import { ServiceModule } from './service/service.module';
 import { BarberController } from './barber/barber.controller';
 import { BarberModule } from './barber/barber.module';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BarberModule } from './barber/barber.module';
     AppointmentModule,
     ServiceModule,
     BarberModule,
+    AdminAuthModule,
   ],
   controllers: [AppController, BarberController],
   providers: [AppService],
