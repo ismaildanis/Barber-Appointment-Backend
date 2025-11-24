@@ -131,27 +131,27 @@ export class AuthService
         }
     }
 
-async generateTokens(customerId: number, email:string)
-{   
-    const accessToken = await this.jwt.signAsync(
-        {sub: customerId, email},
-        {
-            secret: process.env.JWT_SECRET!,
-            expiresIn: process.env.JWT_EXPIRES_IN!,
-        }
-    )
+    async generateTokens(customerId: number, email:string)
+    {   
+        const accessToken = await this.jwt.signAsync(
+            {sub: customerId, email},
+            {
+                secret: process.env.JWT_SECRET!,
+                expiresIn: process.env.JWT_EXPIRES_IN!,
+            }
+        )
 
-    const refreshToken = await this.jwt.signAsync(
-        { sub: customerId, email}, 
-        {
-            secret: process.env.REFRESH_SECRET!,
-            expiresIn: process.env.REFRESH_EXPIRES_IN!,
+        const refreshToken = await this.jwt.signAsync(
+            { sub: customerId, email}, 
+            {
+                secret: process.env.REFRESH_SECRET!,
+                expiresIn: process.env.REFRESH_EXPIRES_IN!,
+            }
+        )
+        
+        return {
+            accessToken,
+            refreshToken,
         }
-    )
-    
-    return {
-        accessToken,
-        refreshToken,
     }
-}
 }
