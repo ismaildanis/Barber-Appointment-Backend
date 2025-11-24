@@ -1,0 +1,128 @@
+generator client {
+  provider      = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Customer {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  firstName    String
+  lastName     String
+  phone        String
+  password     String
+  refreshToken String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  appointments Appointment[]
+}
+
+model Barber {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  firstName    String
+  lastName     String
+  phone        String
+  password     String
+  active       Boolean       @default(true)
+  refreshToken String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  appointments Appointment[]
+  workingHours  WorkingHour[]
+}
+
+model Admin {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  firstName    String
+  lastName     String
+  phone        String
+  password     String
+  refreshToken String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Appointment {
+  id            Int          @id @default(autoincrement())
+  customerId    Int
+  barberId      Int
+  serviceId     Int
+  appointmentAt DateTime
+  status        Status       @default(PENDING)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  customer      Customer     @relation(fields: [customerId], references: [id])
+  barber        Barber       @relation(fields: [barberId], references: [id])
+  service       Service      @relation(fields: [serviceId], references: [id])
+
+  attendances   Attendance[]
+
+  @@unique([barberId, appointmentAt])
+}
+
+model Service {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  price        Float
+  duration     Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  appointments Appointment[]
+}
+
+model Attendance {
+  id            Int          @id @default(autoincrement())
+  appointmentId Int
+  date          DateTime
+  status        Status
+  createdAt     DateTime     @default(now())
+
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id])
+}
+
+enum Range {
+  MIN15
+  MIN30
+}
+
+model WorkingHour {
+  id         Int    @id @default(autoincrement())
+  barberId   Int
+  dayOfWeek  Int   
+  startMin   Int    
+  endMin     Int    
+  slotSize   Range  @default(MIN15)
+
+  barber   Barber @relation(fields: [barberId], references: [id])
+  breaks   BreakPeriod[]
+
+  @@index([barberId, dayOfWeek])
+  @@unique([barberId, dayOfWeek, startMin, endMin])
+}
+
+model BreakPeriod {
+  id         Int  @id @default(autoincrement())
+  workingHourId Int
+  startMin   Int
+  endMin     Int
+
+  workingHour WorkingHour @relation(fields: [workingHourId], references: [id])
+}

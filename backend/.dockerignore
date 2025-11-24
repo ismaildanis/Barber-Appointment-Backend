@@ -1,0 +1,63 @@
+# Git ve IDE dosyaları
+.git
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node.js bağımlılıkları
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next.js build dosyaları
+.next/
+out/
+build/
+dist/
+
+# Çevresel değişken dosyaları
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Test dosyaları
+__tests__/
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.ts
+**/*.spec.tsx
+jest.config.js
+jest.config.ts
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Documentation
+README.md
+*.md
+
+# OS dosyaları
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Vercel
+.vercel
