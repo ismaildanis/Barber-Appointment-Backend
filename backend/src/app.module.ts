@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppointmentModule } from './appointment/appointment.module';
 import { ServiceModule } from './service/service.module';
+import { BarberController } from './barber/barber.controller';
+import { BarberModule } from './barber/barber.module';
 
 @Module({
   imports: [
@@ -23,8 +25,9 @@ import { ServiceModule } from './service/service.module';
 
     AppointmentModule,
     ServiceModule,
+    BarberModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, BarberController],
   providers: [AppService],
 })
 export class AppModule {}
