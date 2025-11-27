@@ -9,7 +9,7 @@ dayjs.extend(timezone);
 dayjs.tz.setDefault('Europe/Istanbul');
 
 @Injectable()
-export class HolidayService {
+export class AppointmentHolidayService {
     constructor(private prisma: PrismaService) {}
 
     async isHoliday(dateStr: string): Promise<boolean> {

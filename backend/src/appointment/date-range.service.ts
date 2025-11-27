@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import dayjs = require('dayjs');
-import { HolidayService } from "./holiday.service";
+import { AppointmentHolidayService } from "./holiday.service";
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { PrismaService } from "src/prisma/prisma.service";
@@ -11,7 +11,7 @@ dayjs.tz.setDefault('Europe/Istanbul');
 @Injectable()
 export class DateRangeService {
     constructor(
-        private holidayService: HolidayService,
+        private holidayService: AppointmentHolidayService,
         private prisma: PrismaService
 
     ) {}
@@ -20,7 +20,7 @@ export class DateRangeService {
         const result: string[] = [];
         let current = dayjs().tz('Europe/Istanbul').startOf('day');
         
-        while (result.length < 3) {
+        while (result.length < 5) {
             const dateStr = current.format('YYYY-MM-DD');
 
             const isHoliday = await this.holidayService.isHoliday(dateStr);

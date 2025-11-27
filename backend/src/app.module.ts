@@ -14,6 +14,7 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { BarberAuthController } from './barber-auth/barber-auth.controller';
 import { BarberAuthService } from './barber-auth/barber-auth.service';
 import { BarberAuthModule } from './barber-auth/barber-auth.module';
+import { HolidayModule } from './holiday/holiday.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BarberAuthModule } from './barber-auth/barber-auth.module';
     BarberModule,
     AdminAuthModule,
     BarberAuthModule,
+    HolidayModule,
   ],
   controllers: [AppController, BarberController, BarberAuthController],
   providers: [AppService, BarberAuthService],
