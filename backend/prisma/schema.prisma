@@ -11,6 +11,7 @@ enum Status {
   PENDING
   CONFIRMED
   COMPLETED
+  EXPIRED
   CANCELLED
 }
 
@@ -125,4 +126,11 @@ model BreakPeriod {
   endMin     Int
 
   workingHour WorkingHour @relation(fields: [workingHourId], references: [id])
+}
+
+model HolidayDate {
+  id          Int    @id @default(autoincrement())
+  date        DateTime @unique
+  reason      String
+  createdAt   DateTime @default(now())
 }

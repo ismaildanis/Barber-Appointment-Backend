@@ -17,6 +17,20 @@ export class AppointmentController
         return this.appointmentService.findAll(req.customer!.id)
     }
     
+    @Get('available-dates')
+    @UseGuards(JwtAuthGuard)
+    getAvailableDates(@Req() req: any)
+    {
+        return this.appointmentService.getAvailableDates(req.customer!.id)
+    }
+
+    @Get('available-hours/:barberId')
+    @UseGuards(JwtAuthGuard)
+    getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Req() req: any)
+    {
+        return this.appointmentService.getAvailableHours(req.customer!.id, barberId)
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     show(@Param('id', ParseIntPipe) id:number, @Req() req: any )
@@ -44,8 +58,6 @@ export class AppointmentController
     {
         return this.appointmentService.delete(req.customer!.id, id)
     }
-
-
 
 
 }

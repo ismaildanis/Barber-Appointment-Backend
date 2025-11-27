@@ -1,10 +1,16 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Status } from '@prisma/client';
+import dayjs = require('dayjs');
+import { DateRangeService } from './date-range.service';
 
 @Injectable()
 export class AppointmentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+      private prisma: PrismaService,
+      private dateRangeService: DateRangeService,
+  ) {}
 
   async findAll(customerId: number) {
     return this.prisma.appointment.findMany({
@@ -24,13 +30,30 @@ export class AppointmentService {
   async create(dto: any, customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
-
-    const customerAppt = await this.prisma.appointment.findFirst({ where: { customerId } });
+    
+    const customerAppt = await this.prisma.appointment.findFirst({
+      where: {
+        customerId,
+        status: { in: [Status.PENDING, Status.EXPIRED] },
+      },
+    });
+    
     if (customerAppt) throw new ConflictException('Zaten randevunuz var');
 
     const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
     if (!barber) throw new NotFoundException('Berber bulunamadı');
+    const allowedDates = await this.dateRangeService.getAvailableDates();
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId);
+    const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
+    const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
+    if (!allowedDates.includes(dateStr)) {
+      throw new ConflictException('Bu gün için randevu alınamaz (Tatil veya kapalı gün).');
+    }
+
+    if (!allowedHours.includes(hourStr)) {
+      throw new ConflictException('Bu saat için randevu alınamaz.');
+    }
     try {
       return await this.prisma.appointment.create({
         data: { ...dto, customerId, appointmentAt: new Date(dto.appointmentAt) },
@@ -84,5 +107,18 @@ export class AppointmentService {
       throw new ConflictException('Tekrarlanan kayıt');
     }
     throw e;
+  }
+
+  async getAvailableDates(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
+    return this.dateRangeService.getAvailableDates();
+  }
+
+  async getAvailableHours(customerId: number, barberId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    
+    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
+    return this.dateRangeService.getAvailableHours(barberId);
   }
 }
