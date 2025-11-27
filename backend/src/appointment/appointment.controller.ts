@@ -4,6 +4,8 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
+import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
+import { MarkAppointmentDto } from './dto/mark-appointment.dto';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -36,6 +38,7 @@ export class AppointmentController
 
     @Get('available-hours/:barberId')
     @UseGuards(JwtAuthGuard)
+
     getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
     {
         return this.appointmentService.getAvailableHours(req.customer!.id, barberId, date)
@@ -67,6 +70,12 @@ export class AppointmentController
     delete(@Param('id', ParseIntPipe) id: number, @Req() req: any)
     {
         return this.appointmentService.delete(req.customer!.id, id)
+    }
+
+    @Post('mark/:id')
+    @UseGuards(JwtAdminGuard)
+    markAppointment(@Param('id', ParseIntPipe) id: number, @Body() dto: MarkAppointmentDto , @Req() req: any){
+        return this.appointmentService.markAppointment(req.admin!.id, id, dto)
     }
 
 

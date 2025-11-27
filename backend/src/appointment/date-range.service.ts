@@ -36,13 +36,17 @@ export class DateRangeService {
 
     async getAvailableHours(barberId: number, date: string) {
 
-        const regex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!regex.test(date)) {
-            throw new BadRequestException("Tarih formatı 'YYYY-MM-DD' olmalıdır.");
+        let onlyDate = date;
+        if (onlyDate.includes("T")) {
+            onlyDate = onlyDate.split("T")[0];
         }
 
-        const [year, month, day] = date.split('-').map(Number);
+        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!regex.test(onlyDate)) {
+            throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
+        }
 
+        const [year, month, day] = onlyDate.split('-').map(Number);
         const realDate = new Date(year, month - 1, day);
 
         if (
@@ -59,7 +63,7 @@ export class DateRangeService {
         const today = dayjs().tz('Europe/Istanbul');
         
 
-        const isHoliday = await this.holidayService.isHoliday(date);
+        const isHoliday = await this.holidayService.isHoliday(onlyDate);
         if (isHoliday) return [];
 
         const dayOfWeek = target.day();

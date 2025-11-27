@@ -11,6 +11,7 @@ enum Status {
   SCHEDULED
   COMPLETED
   NO_SHOW
+  EXPIRED
   CANCELLED
 }
 
@@ -71,8 +72,6 @@ model Appointment {
   barber        Barber       @relation(fields: [barberId], references: [id])
   service       Service      @relation(fields: [serviceId], references: [id])
 
-  @@unique([customerId])
-  @@unique([barberId, appointmentAt])
 }
 
 model Service {
