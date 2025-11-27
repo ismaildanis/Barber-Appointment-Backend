@@ -3,6 +3,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -16,6 +17,15 @@ export class AppointmentController
     {
         return this.appointmentService.findAll(req.customer!.id)
     }
+
+    @Get('barber')
+    @UseGuards(JwtBarberGuard)
+
+    findForBarber(@Req() req: any)
+    {
+        return this.appointmentService.findForBarber(req.barber!.id)
+    }
+
     
     @Get('available-dates')
     @UseGuards(JwtAuthGuard)

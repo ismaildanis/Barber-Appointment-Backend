@@ -108,6 +108,34 @@ export class AppointmentService {
     return { message: 'Randevu silindi' };
   }
 
+  async getAvailableDates(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
+    return this.dateRangeService.getAvailableDates();
+  }
+
+  async getAvailableHours(customerId: number, barberId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    
+    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
+    return this.dateRangeService.getAvailableHours(barberId);
+  }
+
+
+  async findForBarber(barberId: number) {
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: barberId },
+    });
+
+    if (!barber) throw new NotFoundException('Berber bulunamadı');
+
+    return await this.prisma.appointment.findMany({
+      where: { barberId },
+      orderBy: { appointmentAt: 'asc' },
+    });
+  }
+
+  
   private handleUniqueError(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       const t = String(e.meta?.target ?? '');
@@ -122,16 +150,4 @@ export class AppointmentService {
     throw e;
   }
 
-  async getAvailableDates(customerId: number) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
-    return this.dateRangeService.getAvailableDates();
-  }
-
-  async getAvailableHours(customerId: number, barberId: number) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    
-    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
-    return this.dateRangeService.getAvailableHours(barberId);
-  }
 }
