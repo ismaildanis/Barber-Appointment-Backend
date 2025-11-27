@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Range } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -65,30 +65,113 @@ async function main() {
         dayOfWeek: wh.dayOfWeek,
         startMin: wh.startMin,
         endMin: wh.endMin,
-        slotSize: "MIN15",
+        slotSize: Range.MIN15,
       },
     });
   }
 
   console.log("Working hours seeded.");
-  // Service (find/create çünkü name unique değil)
-  const serviceName = 'Sac Kesimi';
-  const existingService = await prisma.service.findFirst({ where: { name: serviceName } });
+  await prisma.appointment.deleteMany();
+  await prisma.service.deleteMany();
 
-  if (!existingService) {
-    await prisma.service.create({
-      data: {
-        name: serviceName,
-        description: 'Klasik sac kesimi',
-        price: 150,
-        duration: 30,
-      },
-    });
-    console.log('Service created.');
-  } else {
-    console.log('Service already exists.');
-  }
+  const services = [
+    {
+      name: "Anatomik Saç Kesimi",
+      description: "Profesyonel, detaylı anatomik saç kesimi.",
+      price: 500,
+      duration: 30,
+    },
+    {
+      name: "VIP Saç - Sakal Kesimi",
+      description: "Saç + sakal + bakım + özel servis.",
+      price: 1500,
+      duration: 60,
+    },
+    {
+      name: "VIP Saç Kesimi",
+      description: "Detaylı VIP saç kesimi ve bakım.",
+      price: 1000,
+      duration: 45,
+    },
+    {
+      name: "VIP Sakal Kesimi",
+      description: "Köpük, bakım ve ustura ile VIP sakal kesimi.",
+      price: 500,
+      duration: 30,
+    },
+    {
+      name: "Modern Sakal Tıraşı",
+      description: "Modern çizim ve şekillendirme ile sakal tıraşı.",
+      price: 250,
+      duration: 20,
+    },
+    {
+      name: "Saç Yıkama ve Fön",
+      description: "Saç yıkama, bakım ve profesyonel fön işlemi.",
+      price: 250,
+      duration: 20,
+    },
+    {
+      name: "Usturayla Sakal Tıraşı",
+      description: "Klasik ustura tıraşı, sıcak havlu uygulamalı.",
+      price: 250,
+      duration: 20,
+    },
+    {
+      name: "Çocuk Saç Kesimi",
+      description: "10 yaş altı çocuk saç kesimi.",
+      price: 400,
+      duration: 25,
+    },
+    {
+      name: "Anatomik Kaş Tasarımı",
+      description: "Profesyonel erkek kaş tasarımı.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Ense ve Favori Düzeltme",
+      description: "Ense ve favorilerin makine / ustura ile düzenlenmesi.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Ağda (Yanak - Kulak)",
+      description: "Yanak ve kulak bölgelerine ağda uygulaması.",
+      price: 250,
+      duration: 10,
+    },
+    {
+      name: "Saç Düzleştirici",
+      description: "Saç düzleştirme işlemi.",
+      price: 600,
+      duration: 30,
+    },
+    {
+      name: "Saç Karbon Maskesi",
+      description: "Yağ ve kir temizleyen karbon saç maskesi.",
+      price: 500,
+      duration: 25,
+    },
+    {
+      name: "Saç Biotin ve Kolajen Maskesi",
+      description: "Biotin + kolajen ile saç güçlendirme bakımı.",
+      price: 500,
+      duration: 25,
+    },
+    {
+      name: "Saç Protein Maskesi",
+      description: "Yoğun protein saç maskesi.",
+      price: 500,
+      duration: 25,
+    },
+  ];
+
+  await prisma.service.createMany({ data: services });
+
+  console.log("Services seeded successfully ✔");
 }
+
 
 main()
   .catch((e) => {

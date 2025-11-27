@@ -5,6 +5,8 @@ import { Status } from '@prisma/client';
 import dayjs = require('dayjs');
 import { DateRangeService } from './date-range.service';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @Injectable()
 export class AppointmentService {
@@ -32,7 +34,7 @@ export class AppointmentService {
     return appt;
   }
 
-  async create(dto: any, customerId: number) {
+  async create(dto: CreateAppointmentDto, customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     
@@ -42,15 +44,13 @@ export class AppointmentService {
         status: { in: [Status.SCHEDULED] },
       },
     });
-
-    console.log(customerAppt);
     
     if (customerAppt) throw new ConflictException('Zaten randevunuz var');
 
     const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
     if (!barber) throw new NotFoundException('Berber bulunamadı');
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dto.appointmentAt);
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dayjs(dto.appointmentAt).format('YYYY-MM-DD HH:mm'));
     const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
     const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
@@ -70,7 +70,7 @@ export class AppointmentService {
     }
   }
 
-  async update(dto: any, customerId: number, appointmentId: number) {
+  async update(dto: UpdateAppointmentDto, customerId: number, appointmentId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
 
@@ -79,7 +79,7 @@ export class AppointmentService {
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dto.appointmentAt);
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dayjs(dto.appointmentAt).format('YYYY-MM-DD HH:mm'));
     const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
     const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
