@@ -10,6 +10,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     AuthService,
     PrismaService,
     JwtStrategy,
+    JwtRefreshStrategy,
+    JwtRefreshGuard,
     JwtAuthGuard,
   ],
 })

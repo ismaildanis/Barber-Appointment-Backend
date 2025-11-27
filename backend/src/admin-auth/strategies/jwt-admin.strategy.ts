@@ -12,6 +12,7 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       ]),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET,
+      
     });
   }
 

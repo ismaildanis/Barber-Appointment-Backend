@@ -4,6 +4,8 @@ import { AdminAuthService } from './admin-auth.service';
 import { JwtAdminStrategy } from './strategies/jwt-admin.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAdminGuard } from './guards/jwt-admin-auth.guard';
+import { JwtAdminRefreshGuard } from './guards/jwt-admin-refresh.guard';
+import { JwtAdminRefreshStrategy } from './strategies/jwt-admin-refresh.strategy';
 
 @Module({
   imports: [
@@ -14,7 +16,7 @@ import { JwtAdminGuard } from './guards/jwt-admin-auth.guard';
     }),
   ],
   controllers: [AdminAuthController],
-  providers: [AdminAuthService, JwtAdminStrategy, JwtAdminGuard],
+  providers: [AdminAuthService, JwtAdminStrategy, JwtAdminGuard, JwtAdminRefreshGuard, JwtAdminRefreshStrategy],
   exports: [JwtAdminGuard],
 })
 export class AdminAuthModule {}

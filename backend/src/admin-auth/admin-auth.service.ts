@@ -50,6 +50,7 @@ export class AdminAuthService {
             refreshToken,
         }
     }
+    
 
     async getMe(adminId: number){
         const admin = await this.prisma.admin.findUnique({
@@ -93,6 +94,44 @@ export class AdminAuthService {
 
         return { message: "Çıkış Başarılı" }
     }
+    async refreshTokens(adminId: number) {
+        const admin = await this.prisma.admin.findUnique({
+            where: { id: adminId },
+        });
+
+        if (!admin || !admin.refreshToken) {
+            throw new UnauthorizedException('Refresh token bulunamadı');
+        }
+
+        const accessToken = await this.jwt.signAsync(
+            { sub: adminId },
+            {
+            secret: process.env.JWT_SECRET,
+            expiresIn: process.env.JWT_EXPIRES_IN,
+            }
+        );
+
+        const newRefreshToken = await this.jwt.signAsync(
+            { sub: adminId },
+            {
+            secret: process.env.REFRESH_SECRET,
+            expiresIn: process.env.REFRESH_EXPIRES_IN,
+            }
+        );
+
+        const hashed = await bcrypt.hash(newRefreshToken, 12);
+
+        await this.prisma.admin.update({
+            where: { id: adminId },
+            data: { refreshToken: hashed },
+        });
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+        };
+    }
+
 
     async generateToken(customerId: number, email:string)
     {   

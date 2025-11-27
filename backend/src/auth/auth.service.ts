@@ -130,6 +130,44 @@ export class AuthService
             message: "Çıkış başarılı",
         }
     }
+    async refreshTokens(customerId: number) {
+        const customer = await this.prisma.customer.findUnique({
+            where: { id: customerId },
+        });
+
+        if (!customer || !customer.refreshToken) {
+            throw new UnauthorizedException('Refresh token bulunamadı');
+        }
+
+        // Yeni token üret
+        const accessToken = await this.jwt.signAsync(
+            { sub: customerId },
+            {
+                secret: process.env.JWT_SECRET,
+                expiresIn: process.env.JWT_EXPIRES_IN,
+            }
+        );
+
+        const newRefreshToken = await this.jwt.signAsync(
+            { sub: customerId },
+            {
+                secret: process.env.REFRESH_SECRET,
+                expiresIn: process.env.REFRESH_EXPIRES_IN,
+            }
+        );
+
+        const hashed = await bcrypt.hash(newRefreshToken, 12);
+
+        await this.prisma.customer.update({
+            where: { id: customerId },
+            data: { refreshToken: hashed },
+        });
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+        };
+    }
 
     async generateTokens(customerId: number, email:string)
     {   

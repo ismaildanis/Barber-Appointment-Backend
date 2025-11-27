@@ -45,6 +45,45 @@ export class BarberAuthService {
         }
     }
 
+    async refreshTokens(barberId: number) {
+        const barber = await this.prisma.barber.findUnique({
+            where: { id: barberId },
+        });
+
+        if (!barber || !barber.refreshToken) {
+            throw new UnauthorizedException('Refresh token bulunamadı');
+        }
+
+        const accessToken = await this.jwt.signAsync(
+            { sub: barberId },
+            {
+                secret: process.env.JWT_SECRET,
+                expiresIn: process.env.JWT_EXPIRES_IN,
+            },
+        );
+
+        const newRefreshToken = await this.jwt.signAsync(
+            { sub: barberId },
+            {
+                secret: process.env.REFRESH_SECRET,
+                expiresIn: process.env.REFRESH_EXPIRES_IN,
+            },
+        );
+
+        const hashed = await bcrypt.hash(newRefreshToken, 12);
+
+        await this.prisma.barber.update({
+            where: { id: barberId },
+            data: { refreshToken: hashed },
+        });
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+        };
+    }
+
+
     async logout(barberId: number) {
 
         const barber = await this.prisma.barber.findUnique({
