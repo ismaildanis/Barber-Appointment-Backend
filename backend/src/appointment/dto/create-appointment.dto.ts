@@ -11,7 +11,7 @@ export class CreateAppointmentDto {
 
     @IsNotEmpty()
     @IsDateString()
-    appointmentAt: Date;
+    appointmentStartAt: Date;
 
     @IsString()
     @IsOptional()

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put, Query } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put, Query, BadRequestException } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';
@@ -41,6 +41,9 @@ export class AppointmentController
 
     getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
     {
+        if (!date) {
+            throw new BadRequestException('Tarih zorunludur.');
+        }
         return this.appointmentService.getAvailableHours(req.customer!.id, barberId, date)
     }
 

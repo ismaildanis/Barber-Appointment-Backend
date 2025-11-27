@@ -11,7 +11,7 @@ export class UpdateAppointmentDto {
 
     @IsDateString()
     @IsOptional()
-    appointmentAt: Date;
+    appointmentStartAt: Date;
 
     @IsString()
     @IsOptional()

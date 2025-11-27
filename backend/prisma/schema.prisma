@@ -58,21 +58,27 @@ model Admin {
 }
 
 model Appointment {
-  id            Int          @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   customerId    Int
   barberId      Int
   serviceId     Int
-  appointmentAt DateTime
-  status        Status       @default(SCHEDULED)
+  
+  appointmentStartAt DateTime
+  appointmentEndAt   DateTime
+
+  status        Status     @default(SCHEDULED)
   notes         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  customer      Customer     @relation(fields: [customerId], references: [id])
-  barber        Barber       @relation(fields: [barberId], references: [id])
-  service       Service      @relation(fields: [serviceId], references: [id])
+  customer      Customer   @relation(fields: [customerId], references: [id])
+  barber        Barber     @relation(fields: [barberId], references: [id])
+  service       Service    @relation(fields: [serviceId], references: [id])
 
+  @@index([barberId, appointmentStartAt])
+  @@index([appointmentStartAt, appointmentEndAt])
 }
+
 
 model Service {
   id           Int           @id @default(autoincrement())

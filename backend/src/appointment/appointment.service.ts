@@ -5,14 +5,20 @@ import { Status } from '@prisma/client';
 import dayjs = require('dayjs');
 import { DateRangeService } from './date-range.service';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { ConflictValidator } from './validators/conflict.validator';
+import { WorkingHourValidator } from './validators/working-hours.validator';
+import { TimeRangeValidator } from './validators/time-range.validator';
+import { WorkingHourService } from './working-hour.service';
 
 @Injectable()
 export class AppointmentService {
   constructor(
       private prisma: PrismaService,
       private dateRangeService: DateRangeService,
+      private conflict: ConflictValidator,
+      private work: WorkingHourValidator,
+      private timeRange: TimeRangeValidator,
+      private workinHours: WorkingHourService
   ) {}
 
   async findAll(customerId: number) {
@@ -20,7 +26,7 @@ export class AppointmentService {
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     return this.prisma.appointment.findMany({
       where: { customerId },
-      orderBy: { appointmentAt: 'asc' },
+      orderBy: { appointmentStartAt: 'asc' },
     });
   }
 
@@ -34,10 +40,16 @@ export class AppointmentService {
     return appt;
   }
 
-  async create(dto: CreateAppointmentDto, customerId: number) {
+  async create(dto: any, customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     
+    const requestStartAt = this.timeRange.validateDateFormat(dto.appointmentStartAt);
+
+    this.timeRange.validateNotPast(requestStartAt);
+
+    this.timeRange.validateSlotMinutes(requestStartAt, 15); // slot size
+
     const customerAppt = await this.prisma.appointment.findFirst({
       where: {
         customerId,
@@ -49,28 +61,40 @@ export class AppointmentService {
 
     const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
     if (!barber) throw new NotFoundException('Berber bulunamadı');
+
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dayjs(dto.appointmentAt).format('YYYY-MM-DD HH:mm'));
-    const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
-    const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
+    const dateStr = dayjs(dto.appointmentStartAt).format('YYYY-MM-DD');
 
     if (!allowedDates.includes(dateStr)) {
       throw new ConflictException('Bu gün için randevu alınamaz (Tatil veya kapalı gün).');
     }
 
-    if (!allowedHours.includes(hourStr)) {
-      throw new ConflictException('Bu saat için randevu alınamaz.');
+    const service = await this.prisma.service.findUnique({
+      where: { id: dto.serviceId },
+      select: { duration: true },
+    });
+    if (!service) throw new NotFoundException("Servis bulunamadı");
+
+    const apptStartAt = dayjs(dto.appointmentStartAt);
+    const apptEndAt = apptStartAt.add(service.duration, "minute");
+
+    await this.work.workingValidate(dto, apptStartAt, apptEndAt);
+
+    const hasConflict = await this.conflict.conflictValidate(dto, apptStartAt, apptEndAt);
+    if (hasConflict == false) {
+      throw new ConflictException('Randevu saatinde başka bir randevu var.');
     }
+
     try {
       return await this.prisma.appointment.create({
-        data: { ...dto, customerId, appointmentAt: new Date(dto.appointmentAt) },
+        data: { ...dto, customerId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate() },
       });
     } catch (e) {
       this.handleUniqueError(e);
     }
   }
 
-  async update(dto: UpdateAppointmentDto, customerId: number, appointmentId: number) {
+  async update(dto: any, customerId: number, appointmentId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
 
@@ -79,9 +103,9 @@ export class AppointmentService {
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dayjs(dto.appointmentAt).format('YYYY-MM-DD HH:mm'));
-    const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
-    const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dto.appointmentStartAt);
+    const dateStr = dayjs(dto.appointmentStartAt).format('YYYY-MM-DD');
+    const hourStr = dayjs(dto.appointmentStartAt).format('HH:mm');
 
     if (!allowedDates.includes(dateStr)) {
       throw new ConflictException('Bu gün için randevu alınamaz (Tatil veya kapalı gün).');
@@ -93,7 +117,7 @@ export class AppointmentService {
     try {
       return await this.prisma.appointment.update({
         where: { id: appointmentId },
-        data: { ...dto, customerId, appointmentAt: new Date(dto.appointmentAt) },
+        data: { ...dto, customerId, appointmentStartAt: new Date(dto.appointmentStartAt) },
       });
     } catch (e) {
       this.handleUniqueError(e);
@@ -124,7 +148,7 @@ export class AppointmentService {
     
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     
-    return this.dateRangeService.getAvailableHours(barberId, date);
+    return this.workinHours.getDailyHours(barberId, date);
   }
 
 
@@ -137,7 +161,7 @@ export class AppointmentService {
 
     return await this.prisma.appointment.findMany({
       where: { barberId },
-      orderBy: { appointmentAt: 'asc' },
+      orderBy: { appointmentStartAt: 'asc' },
     });
   }
 
@@ -174,7 +198,7 @@ export class AppointmentService {
   private handleUniqueError(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       const t = String(e.meta?.target ?? '');
-      if (t.includes('barberId') && t.includes('appointmentAt')) {
+      if (t.includes('barberId') && t.includes('appointmentStartAt')) {
         throw new ConflictException('Bu saat için berber zaten dolu');
       }
       if (t.includes('customerId')) {

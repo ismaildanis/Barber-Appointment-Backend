@@ -37,25 +37,7 @@ export class DateRangeService {
     async getAvailableHours(barberId: number, date: string) {
 
         let onlyDate = date;
-        if (onlyDate.includes("T")) {
-            onlyDate = onlyDate.split("T")[0];
-        }
-
-        const regex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!regex.test(onlyDate)) {
-            throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
-        }
-
-        const [year, month, day] = onlyDate.split('-').map(Number);
-        const realDate = new Date(year, month - 1, day);
-
-        if (
-            realDate.getFullYear() !== year ||
-            realDate.getMonth() !== month - 1 ||
-            realDate.getDate() !== day
-        ) {
-            throw new BadRequestException("Geçersiz bir tarih girdiniz.");
-        }
+        
 
         const result: string[] = [];
 
