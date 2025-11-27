@@ -1,26 +1,64 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ServiceService {
-  create(createServiceDto: CreateServiceDto) {
-    return 'This action adds a new service';
+
+  constructor(private prisma: PrismaService) {}
+  async create(adminId: number, dto: CreateServiceDto) {
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+    try {
+      await this.prisma.service.create({data: dto})
+      return {message: 'Hizmet başarıyla oluşturuldu'}
+    } catch (error) {
+      throw new Error(error)
+    }
   }
 
-  findAll() {
-    return `This action returns all service`;
+  async findAll(adminId: number) {
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+
+    const services = await this.prisma.service.findMany()
+    if(!services) throw new NotFoundException('Hizmetler bulunamadı')
+    return services
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} service`;
+  async findOne(adminId: number, serviceId: number) {
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+
+    const service = await this.prisma.service.findUnique({where: {id: serviceId}})
+    if(!service) throw new NotFoundException('Hizmet bulunamadı')
+    return service
   }
 
-  update(id: number, updateServiceDto: UpdateServiceDto) {
-    return `This action updates a #${id} service`;
+  async update(adminId: number, serviceId: number, updateServiceDto: UpdateServiceDto) {
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+
+    const service = await this.prisma.service.findUnique({where: {id: serviceId}})
+    if(!service) throw new NotFoundException('Hizmet bulunamadı')
+    
+    try {
+      await this.prisma.service.update({where: {id: serviceId}, data: updateServiceDto})
+      return {message: 'Hizmet başarıyla güncellendi'}
+    } catch (error) {
+      throw new Error(error)
+    }
+      
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} service`;
+  async delete(adminId: number, serviceId: number) {
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+
+    const service = this.prisma.service.findUnique({where: {id: serviceId}})
+    if(!service) throw new NotFoundException('Hizmet bulunamadı')
+    this.prisma.service.delete({where: {id: serviceId}})
+    return {message: 'Hizmet başarıyla silindi'} 
   }
 }

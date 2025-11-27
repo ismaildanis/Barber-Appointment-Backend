@@ -13,6 +13,8 @@ export class AppointmentService {
   ) {}
 
   async findAll(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
     return this.prisma.appointment.findMany({
       where: { customerId },
       orderBy: { appointmentAt: 'asc' },
@@ -71,7 +73,18 @@ export class AppointmentService {
       where: { id: appointmentId, customerId },
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    const allowedDates = await this.dateRangeService.getAvailableDates();
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId);
+    const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
+    const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
+    if (!allowedDates.includes(dateStr)) {
+      throw new ConflictException('Bu gün için randevu alınamaz (Tatil veya kapalı gün).');
+    }
+
+    if (!allowedHours.includes(hourStr)) {
+      throw new ConflictException('Bu saat için randevu alınamaz.');
+    }
     try {
       return await this.prisma.appointment.update({
         where: { id: appointmentId },

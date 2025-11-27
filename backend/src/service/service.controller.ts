@@ -1,34 +1,40 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 
 @Controller('service')
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
   @Post()
-  create(@Body() createServiceDto: CreateServiceDto) {
-    return this.serviceService.create(createServiceDto);
+  @UseGuards(JwtAdminGuard)
+  create(@Body() dto: CreateServiceDto, @Req() req: any) {
+    return this.serviceService.create(req.admin!.id, dto);
   }
 
   @Get()
-  findAll() {
-    return this.serviceService.findAll();
+  @UseGuards(JwtAdminGuard)
+  findAll(@Req() req: any) {
+    return this.serviceService.findAll(req.admin!.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.serviceService.findOne(+id);
+  @UseGuards(JwtAdminGuard)
+  findOne(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
+    return this.serviceService.findOne(req.admin!.id, serviceId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
-    return this.serviceService.update(+id, updateServiceDto);
+  @Put(':id')
+  @UseGuards(JwtAdminGuard)
+  update(@Param('id', ParseIntPipe) serviceId: number, @Body() dto: UpdateServiceDto, @Req() req: any) {
+    return this.serviceService.update(req.admin!.id,serviceId, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.serviceService.remove(+id);
+  @UseGuards(JwtAdminGuard)
+  delete(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
+    return this.serviceService.delete(req.admin!.id, serviceId);
   }
 }

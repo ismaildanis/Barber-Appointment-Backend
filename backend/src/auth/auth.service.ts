@@ -24,7 +24,7 @@ export class AuthService
         });
 
         if(existing){
-            throw new ConflictException("Email already exists")
+            throw new ConflictException("Email zaten bulunuyor")
         }
 
         const hashedPassword =  await bcrypt.hash(dto.password, 12)
