@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Status" AS ENUM ('PENDING', 'EXPIRED', 'CONFIRMED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "Status" AS ENUM ('SCHEDULED', 'COMPLETED', 'NO_SHOW', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "Range" AS ENUM ('MIN15', 'MIN30');
@@ -57,7 +57,7 @@ CREATE TABLE "Appointment" (
     "barberId" INTEGER NOT NULL,
     "serviceId" INTEGER NOT NULL,
     "appointmentAt" TIMESTAMP(3) NOT NULL,
-    "status" "Status" NOT NULL DEFAULT 'PENDING',
+    "status" "Status" NOT NULL DEFAULT 'SCHEDULED',
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -70,23 +70,12 @@ CREATE TABLE "Service" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "price" DOUBLE PRECISION NOT NULL,
+    "price" DECIMAL(65,30) NOT NULL,
     "duration" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Attendance" (
-    "id" SERIAL NOT NULL,
-    "appointmentId" INTEGER NOT NULL,
-    "date" TIMESTAMP(3) NOT NULL,
-    "status" "Status" NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Attendance_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -111,6 +100,16 @@ CREATE TABLE "BreakPeriod" (
     CONSTRAINT "BreakPeriod_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "HolidayDate" (
+    "id" SERIAL NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "reason" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "HolidayDate_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Customer_email_key" ON "Customer"("email");
 
@@ -121,6 +120,9 @@ CREATE UNIQUE INDEX "Barber_email_key" ON "Barber"("email");
 CREATE UNIQUE INDEX "Admin_email_key" ON "Admin"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Appointment_customerId_key" ON "Appointment"("customerId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Appointment_barberId_appointmentAt_key" ON "Appointment"("barberId", "appointmentAt");
 
 -- CreateIndex
@@ -128,6 +130,9 @@ CREATE INDEX "WorkingHour_barberId_dayOfWeek_idx" ON "WorkingHour"("barberId", "
 
 -- CreateIndex
 CREATE UNIQUE INDEX "WorkingHour_barberId_dayOfWeek_startMin_endMin_key" ON "WorkingHour"("barberId", "dayOfWeek", "startMin", "endMin");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "HolidayDate_date_key" ON "HolidayDate"("date");
 
 -- AddForeignKey
 ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -137,9 +142,6 @@ ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_barberId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_appointmentId_fkey" FOREIGN KEY ("appointmentId") REFERENCES "Appointment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "WorkingHour" ADD CONSTRAINT "WorkingHour_barberId_fkey" FOREIGN KEY ("barberId") REFERENCES "Barber"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

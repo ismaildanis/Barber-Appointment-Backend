@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put, Query } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';
@@ -36,9 +36,9 @@ export class AppointmentController
 
     @Get('available-hours/:barberId')
     @UseGuards(JwtAuthGuard)
-    getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Req() req: any)
+    getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
     {
-        return this.appointmentService.getAvailableHours(req.customer!.id, barberId)
+        return this.appointmentService.getAvailableHours(req.customer!.id, barberId, date)
     }
 
     @Get(':id')

@@ -21,12 +21,11 @@ async function main() {
     },
   });
   console.log('Admin user ensured.');
-
   // Barber
   const barberEmail = 'barber@site.com';
   const barberPassword = await bcrypt.hash('Barber123!', 12);
 
-  await prisma.barber.upsert({
+  const barber = await prisma.barber.upsert({
     where: { email: barberEmail },
     update: {},
     create: {
@@ -41,6 +40,37 @@ async function main() {
   });
   console.log('Barber ensured.');
 
+    const workingHours = [
+    { dayOfWeek: 1, startMin: 600, endMin: 1200 }, // Pazartesi 10:00 – 20:00
+    { dayOfWeek: 2, startMin: 600, endMin: 1200 }, // Salı
+    { dayOfWeek: 3, startMin: 600, endMin: 1200 }, // Çarşamba
+    { dayOfWeek: 4, startMin: 600, endMin: 1200 }, // Perşembe
+    { dayOfWeek: 5, startMin: 600, endMin: 1200 }, // Cuma
+    { dayOfWeek: 6, startMin: 600, endMin: 1200 }, // Cumartesi
+  ];
+
+  for (const wh of workingHours) {
+    await prisma.workingHour.upsert({
+      where: {
+        barberId_dayOfWeek_startMin_endMin: {
+          barberId: barber.id,
+          dayOfWeek: wh.dayOfWeek,
+          startMin: wh.startMin,
+          endMin: wh.endMin,
+        },
+      },
+      update: {},
+      create: {
+        barberId: barber.id,
+        dayOfWeek: wh.dayOfWeek,
+        startMin: wh.startMin,
+        endMin: wh.endMin,
+        slotSize: "MIN15",
+      },
+    });
+  }
+
+  console.log("Working hours seeded.");
   // Service (find/create çünkü name unique değil)
   const serviceName = 'Sac Kesimi';
   const existingService = await prisma.service.findFirst({ where: { name: serviceName } });

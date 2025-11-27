@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import dayjs = require('dayjs');
 import { HolidayService } from "./holiday.service";
 import utc from 'dayjs/plugin/utc';
@@ -34,40 +34,65 @@ export class DateRangeService {
         return result;
     }
 
-    async getAvailableHours(barberId: number) {
+    async getAvailableHours(barberId: number, date: string) {
+
+        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!regex.test(date)) {
+            throw new BadRequestException("Tarih formatı 'YYYY-MM-DD' olmalıdır.");
+        }
+
+        const [year, month, day] = date.split('-').map(Number);
+
+        const realDate = new Date(year, month - 1, day);
+
+        if (
+            realDate.getFullYear() !== year ||
+            realDate.getMonth() !== month - 1 ||
+            realDate.getDate() !== day
+        ) {
+            throw new BadRequestException("Geçersiz bir tarih girdiniz.");
+        }
+
         const result: string[] = [];
 
-        const now = dayjs().tz('Europe/Istanbul');
-        const todayDateFormat = now.format('YYYY-MM-DD');
+        const target = dayjs.tz(date, 'Europe/Istanbul').startOf('day');
+        const today = dayjs().tz('Europe/Istanbul');
+        
 
-        const isHoliday = await this.holidayService.isHoliday(todayDateFormat);
-        if (isHoliday) return []; 
+        const isHoliday = await this.holidayService.isHoliday(date);
+        if (isHoliday) return [];
 
-        const dayOfWeek = dayjs().tz('Europe/Istanbul').day(); //bugün
+        const dayOfWeek = target.day();
         const workingHour = await this.prisma.workingHour.findFirst({
-            where: {
-                barberId,
-                dayOfWeek,
-            }
-        })
-        if (!workingHour) throw new NotFoundException('Bu güne ait uygun bir saat bulunamadı.');
+            where: { barberId, dayOfWeek }
+        });
+
+        if (!workingHour) {
+            throw new NotFoundException('Bu gün için çalışma saatleri tanımlı değil.');
+        }
 
         const { startMin, endMin, slotSize } = workingHour;
         const interval = slotSize === 'MIN30' ? 30 : 15;
 
-        let current = now.startOf('day').add(startMin, 'minute'); 
-        let end = now.startOf('day').add(endMin, 'minute'); 
+        let current = target.add(startMin, "minute");
+        const end = target.add(endMin, "minute");
 
         while (current.isBefore(end)) {
 
-            if (current.isAfter(now)) {
-                result.push(current.format('HH:mm'));
+            if (target.isBefore(today)) return [];
+
+            if (target.isSame(today, "day") && current.isBefore(today)) {
+                current = current.add(interval, "minute");
+                continue;
             }
 
-            current = current.add(interval, 'minute');
+
+            result.push(current.format("HH:mm"));
+            current = current.add(interval, "minute");
         }
 
         return result;
     }
+
 
 }

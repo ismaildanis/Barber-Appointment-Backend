@@ -8,10 +8,9 @@ datasource db {
 }
 
 enum Status {
-  PENDING
-  CONFIRMED
+  SCHEDULED
   COMPLETED
-  EXPIRED
+  NO_SHOW
   CANCELLED
 }
 
@@ -63,7 +62,7 @@ model Appointment {
   barberId      Int
   serviceId     Int
   appointmentAt DateTime
-  status        Status       @default(PENDING)
+  status        Status       @default(SCHEDULED)
   notes         String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -72,7 +71,6 @@ model Appointment {
   barber        Barber       @relation(fields: [barberId], references: [id])
   service       Service      @relation(fields: [serviceId], references: [id])
 
-  attendances   Attendance[]
   @@unique([customerId])
   @@unique([barberId, appointmentAt])
 }
@@ -81,22 +79,12 @@ model Service {
   id           Int           @id @default(autoincrement())
   name         String
   description  String?
-  price        Decimal
+  price        Decimal       @db.Decimal(10, 2)
   duration     Int
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   appointments Appointment[]
-}
-
-model Attendance {
-  id            Int          @id @default(autoincrement())
-  appointmentId Int
-  date          DateTime
-  status        Status
-  createdAt     DateTime     @default(now())
-
-  appointment   Appointment  @relation(fields: [appointmentId], references: [id])
 }
 
 enum Range {

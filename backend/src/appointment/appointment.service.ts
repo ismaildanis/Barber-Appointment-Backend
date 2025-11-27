@@ -36,7 +36,7 @@ export class AppointmentService {
     const customerAppt = await this.prisma.appointment.findFirst({
       where: {
         customerId,
-        status: { in: [Status.PENDING, Status.EXPIRED] },
+        //status: { in: [Status.SCHEDULED , Status.NO_SHOW] },
       },
     });
     
@@ -45,7 +45,7 @@ export class AppointmentService {
     const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
     if (!barber) throw new NotFoundException('Berber bulunamadı');
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId);
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dto.appointmentAt);
     const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
     const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
@@ -74,7 +74,7 @@ export class AppointmentService {
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     const allowedDates = await this.dateRangeService.getAvailableDates();
-    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId);
+    const allowedHours = await this.dateRangeService.getAvailableHours(dto.barberId, dto.appointmentAt);
     const dateStr = dayjs(dto.appointmentAt).format('YYYY-MM-DD');
     const hourStr = dayjs(dto.appointmentAt).format('HH:mm');
 
@@ -114,11 +114,12 @@ export class AppointmentService {
     return this.dateRangeService.getAvailableDates();
   }
 
-  async getAvailableHours(customerId: number, barberId: number) {
+  async getAvailableHours(customerId: number, barberId: number, date: string) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     
     if (!customer) throw new NotFoundException('Kullanıcı bulunamadı');
-    return this.dateRangeService.getAvailableHours(barberId);
+    
+    return this.dateRangeService.getAvailableHours(barberId, date);
   }
 
 
