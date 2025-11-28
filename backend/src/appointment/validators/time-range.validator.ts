@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import dayjs = require("dayjs");
+import customParseFormat = require("dayjs/plugin/customParseFormat");
+import utc = require("dayjs/plugin/utc");
+import timezone = require("dayjs/plugin/timezone");
+
+dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class TimeRangeValidator {
@@ -12,9 +19,8 @@ export class TimeRangeValidator {
         "Tarih formatı geçersiz. Format şu olmalıdır: YYYY-MM-DDTHH:mm"
       );
     }
-
-    const date = dayjs(dateStr);
-
+    const date = dayjs.tz(dateStr, "Europe/Istanbul");
+   
     if (!date.isValid()) {
       throw new BadRequestException("Geçersiz bir tarih girdiniz.");
     }
@@ -23,7 +29,7 @@ export class TimeRangeValidator {
   }
 
   validateNotPast(date: any) {
-    const now = dayjs();
+    const now = dayjs().tz('Europe/Istanbul');
 
     if (date.isBefore(now)) {
       throw new BadRequestException("Geçmiş tarihe randevu alınamaz.");

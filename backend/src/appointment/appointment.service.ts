@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
@@ -10,7 +10,6 @@ import { WorkingHourValidator } from './validators/working-hours.validator';
 import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
-import { CANCELLED } from 'dns';
 import { BreakDto } from './dto/break.dto';
 
 @Injectable()
@@ -152,7 +151,11 @@ export class AppointmentService {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
-    
+    const strictDate = dayjs(date, "YYYY-MM-DD", true);
+    if (!strictDate.isValid()) {
+        throw new BadRequestException("Geçersiz bir tarih girdiniz.");
+    }
+
     const allHours = await this.workinHours.getDailyHours(barberId, date);
     const busyHours = await this.workinHours.getBusyHours(barberId, date);
     return {

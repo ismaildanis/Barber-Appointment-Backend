@@ -1,12 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import dayjs = require('dayjs');
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.tz.setDefault('Europe/Istanbul');
 
 @Injectable()
 export class AppointmentHolidayService {
@@ -14,8 +8,7 @@ export class AppointmentHolidayService {
 
     async isHoliday(dateStr: string): Promise<boolean> {
         
-        const date = dayjs(dateStr).tz('Europe/Istanbul');
-
+        const date = dayjs.tz(dateStr, 'Europe/Istanbul');
         //Pazar
         if (date.day() === 0) {
             return true;

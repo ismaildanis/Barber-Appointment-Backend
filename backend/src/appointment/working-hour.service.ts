@@ -1,12 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import dayjs = require("dayjs");
+
 import { PrismaService } from "src/prisma/prisma.service";
 import { AppointmentHolidayService } from "./holiday.service";
 import { Status } from "@prisma/client";
 
-import customParseFormat = require('dayjs/plugin/customParseFormat');
+import dayjs = require("dayjs");
+import customParseFormat = require("dayjs/plugin/customParseFormat");
+import utc = require("dayjs/plugin/utc");
+import timezone = require("dayjs/plugin/timezone");
 
 dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class WorkingHourService {
@@ -19,7 +24,7 @@ export class WorkingHourService {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
         }
-        const d = dayjs(date, "YYYY-MM-DD", true);
+        const d = dayjs.tz(date, "YYYY-MM-DD", "Europe/Istanbul");
         if (!d.isValid()) {
             throw new BadRequestException("Geçersiz bir tarih girdiniz.");
         }
@@ -28,6 +33,7 @@ export class WorkingHourService {
 
     async getDailyHours(barberId: number, date: string) {
         const day = this.validateDate(date);
+        
         const today = dayjs().tz('Europe/Istanbul');
 
         if (await this.holiday.isHoliday(date)) return [];
@@ -40,15 +46,12 @@ export class WorkingHourService {
         const slot = work.slotSize === "MIN30" ? 30 : 15;
         const start = day.startOf("day").add(work.startMin, "minute");
         const end   = day.startOf("day").add(work.endMin, "minute");
-
+        
         const hours: string[] = [];
         let current = start;
 
         while (current.isBefore(end)) {
-            if (day.isSame(today, "day") && current.isBefore(today)) {
-                current = current.add(slot, "minute");
-                continue;
-            }
+            
             hours.push(current.format("HH:mm"));
             current = current.add(slot, "minute");
         }
