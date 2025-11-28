@@ -4,6 +4,10 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { AppointmentHolidayService } from "./holiday.service";
 import { Status } from "@prisma/client";
 
+import customParseFormat = require('dayjs/plugin/customParseFormat');
+
+dayjs.extend(customParseFormat);
+
 @Injectable()
 export class WorkingHourService {
     constructor(
@@ -15,7 +19,7 @@ export class WorkingHourService {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
         }
-        const d = dayjs(date);
+        const d = dayjs(date, "YYYY-MM-DD", true);
         if (!d.isValid()) {
             throw new BadRequestException("Geçersiz bir tarih girdiniz.");
         }
