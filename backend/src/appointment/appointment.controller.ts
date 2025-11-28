@@ -7,6 +7,7 @@ import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
+import { BreakDto } from './dto/break.dto';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -101,6 +102,13 @@ export class AppointmentController
     ) {
     return this.appointmentService.cancelByBarber(req.barber.id, id, dto);
     }
+
+    @Post('barber/break')
+    @UseGuards(JwtBarberGuard)
+    addBreak(@Req() req: any, @Body() dto: BreakDto) {
+    return this.appointmentService.addBreak(req.barber!.id, dto);
+    }
+
 
 
 }

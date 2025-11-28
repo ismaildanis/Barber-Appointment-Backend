@@ -3,11 +3,9 @@ import dayjs = require("dayjs");
 import { PrismaService } from "src/prisma/prisma.service";
 import { AppointmentHolidayService } from "./holiday.service";
 import { Status } from "@prisma/client";
-import { days } from "@nestjs/throttler";
 
 @Injectable()
 export class WorkingHourService {
-
     constructor(
         private prisma: PrismaService,
         private holiday: AppointmentHolidayService,
@@ -17,12 +15,10 @@ export class WorkingHourService {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
         }
-
         const d = dayjs(date);
         if (!d.isValid()) {
             throw new BadRequestException("Geçersiz bir tarih girdiniz.");
         }
-        
         return d;
     }
 
@@ -35,10 +31,7 @@ export class WorkingHourService {
         const work = await this.prisma.workingHour.findFirst({
             where: { barberId, dayOfWeek: day.day() }
         });
-
-        if (!work) {
-            throw new NotFoundException("Bu gün için çalışma saatleri tanımlı değil.");
-        }
+        if (!work) throw new NotFoundException("Bu gün için çalışma saatleri tanımlı değil.");
 
         const slot = work.slotSize === "MIN30" ? 30 : 15;
         const start = day.startOf("day").add(work.startMin, "minute");
@@ -48,12 +41,10 @@ export class WorkingHourService {
         let current = start;
 
         while (current.isBefore(end)) {
-
             if (day.isSame(today, "day") && current.isBefore(today)) {
                 current = current.add(slot, "minute");
                 continue;
             }
-
             hours.push(current.format("HH:mm"));
             current = current.add(slot, "minute");
         }
@@ -62,8 +53,8 @@ export class WorkingHourService {
     }
 
     async getBusyHours(barberId: number, date: string) {
-
         const day = this.validateDate(date);
+
         const work = await this.prisma.workingHour.findFirst({
             where: { barberId, dayOfWeek: day.day() }
         });
@@ -75,7 +66,7 @@ export class WorkingHourService {
         const end   = day.startOf("day").add(work.endMin, "minute");
 
         const allSlots: string[] = [];
-        let cursor = start
+        let cursor = start;
 
         while (cursor.isBefore(end)) {
             allSlots.push(cursor.format("HH:mm"));
@@ -84,12 +75,17 @@ export class WorkingHourService {
 
         const appointments = await this.prisma.appointment.findMany({
             where: {
-            barberId,
-            status: Status.SCHEDULED,
-            appointmentStartAt: { lt: end.toDate() },
-            appointmentEndAt: { gt: start.toDate() },
+                barberId,
+                status: Status.SCHEDULED,
+                appointmentStartAt: { lt: end.toDate() },
+                appointmentEndAt: { gt: start.toDate() },
             },
             select: { appointmentStartAt: true, appointmentEndAt: true }
+        });
+
+        const breaks = await this.prisma.breakPeriod.findMany({
+            where: { workingHourId: work.id },
+            select: { startMin: true, endMin: true }
         });
 
         const busySlots: string[] = [];
@@ -98,14 +94,18 @@ export class WorkingHourService {
             const slotStart = dayjs(`${date} ${slot}`);
             const slotEnd = slotStart.add(slotSize, "minute");
 
-            const overlaps = appointments.some(app => {
-            return (
+            const overlapsAppt = appointments.some(app =>
                 slotStart.toDate() < app.appointmentEndAt &&
                 slotEnd.toDate() > app.appointmentStartAt
             );
+
+            const overlapsBreak = breaks.some(br => {
+                const brStart = day.startOf("day").add(br.startMin, "minute");
+                const brEnd   = day.startOf("day").add(br.endMin, "minute");
+                return slotStart.isBefore(brEnd) && slotEnd.isAfter(brStart);
             });
 
-            if (overlaps) busySlots.push(slot);
+            if (overlapsAppt || overlapsBreak) busySlots.push(slot);
         }
 
         return busySlots;

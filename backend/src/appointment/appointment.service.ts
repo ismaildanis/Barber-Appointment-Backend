@@ -11,6 +11,7 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { CANCELLED } from 'dns';
+import { BreakDto } from './dto/break.dto';
 
 @Injectable()
 export class AppointmentService {
@@ -228,6 +229,50 @@ export class AppointmentService {
     await this.prisma.appointment.update({ where: { id: appointmentId }, data: { status: dto.status, cancelReason: dto.cancelReason, cancelledAt: new Date() } });
     return { message: 'Randevu iptal edildi' };
   }
+
+  async addBreak(barberId: number, dto: BreakDto) {
+    // 1) Berber var mı?
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
+    if (!barber) throw new NotFoundException("Berber bulunamadı");
+
+    // 2) Bugünün çalışma planını bul
+    const day = dayjs().tz("Europe/Istanbul");
+    const work = await this.prisma.workingHour.findFirst({
+      where: { barberId, dayOfWeek: day.day() }
+    });
+
+    if (!work) throw new NotFoundException("Bugün çalışma saati tanımlı değil");
+
+    // 3) BreakPeriod ekle
+    const breakPeriod = await this.prisma.breakPeriod.create({
+      data: {
+        workingHourId: work.id,
+        startMin: dto.startMin,
+        endMin: dto.endMin,
+      }
+    });
+
+    // 4) Bu aralığa denk gelen randevuları iptal et
+    const start = day.startOf("day").add(dto.startMin, "minute").toDate();
+    const end   = day.startOf("day").add(dto.endMin, "minute").toDate();
+
+    await this.prisma.appointment.updateMany({
+      where: {
+        barberId,
+        status: Status.SCHEDULED,
+        appointmentStartAt: { lt: end },
+        appointmentEndAt: { gt: start }
+      },
+      data: {
+        status: Status.BARBER_CANCELLED,
+        cancelReason: "Berber mola verdi",
+        cancelledAt: new Date()
+      }
+    });
+
+    return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
+  }
+
 
   
   private handleUniqueError(e: unknown): never {
