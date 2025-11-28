@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBarberDto } from './dto/create-barber.dto';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { ActivityBarberDto } from './dto/activity-barber.dto';
 
 
 @Injectable()
@@ -108,6 +109,26 @@ export class BarberService {
             message: "Berber başarıyla silindi"
         }
         
+    }
+
+    async update(adminId: number, barberId: number, dto: ActivityBarberDto) {
+        const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
+        if (!admin) {throw new UnauthorizedException("Admin bulunamadı")}
+        const barber = await this.prisma.barber.findUnique({ where: {id: barberId } })
+        if (!barber) {throw new NotFoundException("Berber bulunamadı")}
+        try {
+            await this.prisma.barber.update({
+                data: {
+                    active: dto.active  
+                },
+                where: {
+                    id: barberId
+                }
+            })
+            return { message: "Başarılı" }
+        } catch (error) {
+            throw new Error(error)
+        }
     }
 
     private handleUniqueError(e: unknown): never {

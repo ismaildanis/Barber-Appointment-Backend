@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { BarberService } from './barber.service';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { CreateBarberDto } from './dto/create-barber.dto';
+import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
+import { ActivityBarberDto } from './dto/activity-barber.dto';
 
 @Controller('barber')
 export class BarberController {
@@ -29,5 +31,11 @@ export class BarberController {
     @UseGuards(JwtAdminGuard)
     delete(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
         return this.barberService.delete(req.admin!.id, barberId);
+    }
+
+    @Put(':id')
+    @UseGuards(JwtAdminGuard)
+    isActive(@Req() req: any, @Param('id', ParseIntPipe) barberId: number, @Body() dto: ActivityBarberDto) {
+        return this.barberService.update(req.admin!.id, barberId, dto); 
     }
 }

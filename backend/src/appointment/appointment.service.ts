@@ -9,6 +9,8 @@ import { ConflictValidator } from './validators/conflict.validator';
 import { WorkingHourValidator } from './validators/working-hours.validator';
 import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
+import { BarberCancelDto } from './dto/barber-cancel.dto';
+import { CANCELLED } from 'dns';
 
 @Injectable()
 export class AppointmentService {
@@ -61,7 +63,9 @@ export class AppointmentService {
 
     const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
     if (!barber) throw new NotFoundException('Berber bulunamadı');
-
+    if (!barber.active) {
+      throw new ConflictException('Bu berber şu anda aktif değildir ve randevu alamaz.');
+    }
     const allowedDates = await this.dateRangeService.getAvailableDates();
     const dateStr = dayjs(dto.appointmentStartAt).format('YYYY-MM-DD');
 
@@ -148,7 +152,12 @@ export class AppointmentService {
     
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     
-    return this.workinHours.getDailyHours(barberId, date);
+    const allHours = await this.workinHours.getDailyHours(barberId, date);
+    const busyHours = await this.workinHours.getBusyHours(barberId, date);
+    return {
+      allHours,
+      busyHours,
+    }
   }
 
 
@@ -165,7 +174,21 @@ export class AppointmentService {
     });
   }
 
-  async markAppointment(adminId: number, appointmentId: number, dto: MarkAppointmentDto) {
+  async markCancel(adminId: number, appointmentId: number, dto: MarkAppointmentDto) {
+    const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
+    if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
+    
+    const markAppointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId } });
+    
+    if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
+    try {
+      await this.prisma.appointment.update({where: {id: appointmentId}, data: {cancelReason: dto.cancelReason, status: "CANCELLED", cancelledAt: new Date() }})
+      return {message: "Randevu iptal edildi olarak işaretlendi"}
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+  async markCompleted(adminId: number, appointmentId: number) {
     const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
     if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
 
@@ -173,25 +196,37 @@ export class AppointmentService {
 
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
     try {
-      await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: dto.status}})
-      let stat
-      switch (dto.status) {
-        case 'COMPLETED':
-          stat = 'Randevu onaylandı olarak işaretlendi'
-          break;
-        case 'CANCELLED':
-          stat = 'Randevu iptal edildi olarak işaretlendi'
-          break;
-        case 'NO_SHOW':
-          stat = 'Randevuya gelinmedi olarak işaretlendi'
-          break
-        default:
-          break;
-      }
-      return {message: `${stat}`}
+      await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "COMPLETED"}})
+      return {message: "Randevu onaylandı olarak işaretlendi"}
     } catch (error) {
       throw new Error(error)
     }
+  }
+
+  async markNoShow(adminId: number, appointmentId: number) {
+    const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
+    if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
+  
+    const markAppointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId } });
+  
+    if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
+    try {
+      await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "NO_SHOW"}})
+      return {message: "Randevuya gelinmedi olarak işaretlendi"}
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+  
+  async cancelByBarber(barberId: number, appointmentId: number, dto: BarberCancelDto) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
+    if (!barber) throw new UnauthorizedException('Berber bulunamadı');
+    const appt = await this.prisma.appointment.findFirst({
+      where: { id: appointmentId, barberId },
+    });
+    if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    await this.prisma.appointment.update({ where: { id: appointmentId }, data: { status: dto.status, cancelReason: dto.cancelReason, cancelledAt: new Date() } });
+    return { message: 'Randevu iptal edildi' };
   }
 
   

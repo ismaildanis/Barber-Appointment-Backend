@@ -1,8 +1,7 @@
-import { Status } from "@prisma/client";
-import { IsEnum, IsNotEmpty } from "class-validator";
+import { IsOptional, IsString } from "class-validator";
 
 export class MarkAppointmentDto {
-    @IsNotEmpty()
-    @IsEnum(Status)
-    status: Status
+    @IsOptional()
+    @IsString()
+    cancelReason?: string;
 }

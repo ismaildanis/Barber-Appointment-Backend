@@ -6,6 +6,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
+import { BarberCancelDto } from './dto/barber-cancel.dto';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -75,10 +76,30 @@ export class AppointmentController
         return this.appointmentService.delete(req.customer!.id, id)
     }
 
-    @Post('mark/:id')
+    @Post('mark-cancel/:id')
     @UseGuards(JwtAdminGuard)
-    markAppointment(@Param('id', ParseIntPipe) id: number, @Body() dto: MarkAppointmentDto , @Req() req: any){
-        return this.appointmentService.markAppointment(req.admin!.id, id, dto)
+    markCancel(@Param('id', ParseIntPipe) id: number, @Body() dto: MarkAppointmentDto , @Req() req: any){
+        return this.appointmentService.markCancel(req.admin!.id, id, dto)
+    }
+    @Post('mark-completed/:id')
+    @UseGuards(JwtAdminGuard)
+    markCompleted(@Param('id', ParseIntPipe) id: number, @Req() req: any){
+        return this.appointmentService.markCompleted(req.admin!.id, id)
+    }
+    @Post('mark-no-show/:id')
+    @UseGuards(JwtAdminGuard)
+    markNoShow(@Param('id', ParseIntPipe) id: number, @Req() req: any){
+        return this.appointmentService.markNoShow(req.admin!.id, id)
+    }
+
+    @Post('barber-cancel/:id')
+    @UseGuards(JwtBarberGuard)
+    cancelByBarber(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() dto: BarberCancelDto
+    ) {
+    return this.appointmentService.cancelByBarber(req.barber.id, id, dto);
     }
 
 

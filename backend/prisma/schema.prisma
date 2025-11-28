@@ -12,6 +12,7 @@ enum Status {
   COMPLETED
   NO_SHOW
   EXPIRED
+  BARBER_CANCELLED
   CANCELLED
 }
 
@@ -68,8 +69,10 @@ model Appointment {
 
   status        Status     @default(SCHEDULED)
   notes         String?
+  cancelReason  String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+  cancelledAt   DateTime? 
 
   customer      Customer   @relation(fields: [customerId], references: [id])
   barber        Barber     @relation(fields: [barberId], references: [id])

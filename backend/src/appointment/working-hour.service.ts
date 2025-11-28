@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import dayjs = require("dayjs");
 import { PrismaService } from "src/prisma/prisma.service";
 import { AppointmentHolidayService } from "./holiday.service";
+import { Status } from "@prisma/client";
+import { days } from "@nestjs/throttler";
 
 @Injectable()
 export class WorkingHourService {
@@ -20,7 +22,7 @@ export class WorkingHourService {
         if (!d.isValid()) {
             throw new BadRequestException("Geçersiz bir tarih girdiniz.");
         }
-
+        
         return d;
     }
 
@@ -57,5 +59,55 @@ export class WorkingHourService {
         }
 
         return hours;
+    }
+
+    async getBusyHours(barberId: number, date: string) {
+
+        const day = this.validateDate(date);
+        const work = await this.prisma.workingHour.findFirst({
+            where: { barberId, dayOfWeek: day.day() }
+        });
+        if (!work) return [];
+
+        const slotSize = work.slotSize === "MIN30" ? 30 : 15;
+
+        const start = day.startOf("day").add(work.startMin, "minute");
+        const end   = day.startOf("day").add(work.endMin, "minute");
+
+        const allSlots: string[] = [];
+        let cursor = start
+
+        while (cursor.isBefore(end)) {
+            allSlots.push(cursor.format("HH:mm"));
+            cursor = cursor.add(slotSize, "minute");
+        }
+
+        const appointments = await this.prisma.appointment.findMany({
+            where: {
+            barberId,
+            status: Status.SCHEDULED,
+            appointmentStartAt: { lt: end.toDate() },
+            appointmentEndAt: { gt: start.toDate() },
+            },
+            select: { appointmentStartAt: true, appointmentEndAt: true }
+        });
+
+        const busySlots: string[] = [];
+
+        for (const slot of allSlots) {
+            const slotStart = dayjs(`${date} ${slot}`);
+            const slotEnd = slotStart.add(slotSize, "minute");
+
+            const overlaps = appointments.some(app => {
+            return (
+                slotStart.toDate() < app.appointmentEndAt &&
+                slotEnd.toDate() > app.appointmentStartAt
+            );
+            });
+
+            if (overlaps) busySlots.push(slot);
+        }
+
+        return busySlots;
     }
 }
