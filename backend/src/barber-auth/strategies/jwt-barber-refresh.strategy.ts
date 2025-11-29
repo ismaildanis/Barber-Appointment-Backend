@@ -18,22 +18,14 @@ export class JwtBarberRefreshStrategy extends PassportStrategy(
     });
   }
 
-  async validate(req: any, payload: { sub: number }) {
-    const barber = await this.prisma.barber.findUnique({
-      where: { id: payload.sub },
-    });
+  async validate(payload: { sub: number; role?: string }, req: any) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: payload.sub } });
+    if (!barber || !barber.refreshToken) throw new UnauthorizedException('Refresh token geçersiz');
 
-    if (!barber || !barber.refreshToken) {
-      throw new UnauthorizedException('Refresh token bulunamadı');
-    }
+    const requestToken = req.body.refreshToken;
+    const isMatch = await bcrypt.compare(requestToken, barber.refreshToken);
+    if (!isMatch) throw new UnauthorizedException('Refresh token uyuşmuyor');
 
-    const incomingToken = req.body.refreshToken;
-
-    const isMatch = await bcrypt.compare(incomingToken, barber.refreshToken);
-    if (!isMatch) {
-      throw new UnauthorizedException('Refresh token geçersiz');
-    }
-
-    return { id: barber.id, email: barber.email };
+    return { sub: barber.id, role: 'barber' };
   }
 }

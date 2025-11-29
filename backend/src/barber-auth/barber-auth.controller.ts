@@ -35,12 +35,12 @@ export class BarberAuthController {
     @Post('logout')
     @UseGuards(JwtBarberGuard)
     logout(@Req() req: any) {
-        return this.barberAuthService.logout(req.barber.id);
+        return this.barberAuthService.logout(req.barber.sub);
     }
 
     @Get('me')
     @UseGuards(JwtBarberGuard)
     getMe(@Req() req: any) {
-        return this.barberAuthService.getMe(req.barber.id);
+        return this.barberAuthService.getMe(req.barber.sub);
     }
 }

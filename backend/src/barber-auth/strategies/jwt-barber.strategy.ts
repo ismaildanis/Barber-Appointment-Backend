@@ -13,10 +13,11 @@ export class JwtBarberStrategy extends PassportStrategy(Strategy, 'jwt-barber') 
         });
     }
 
-    async validate(payload: { sub: number }){
-        const barber = await this.prisma.barber.findUnique({where: { id: payload.sub }})
-        if(!barber) throw new UnauthorizedException()
-        return { id: barber.id, email: barber.email }
-    }
+  async validate(payload: { sub: number; role: 'barber'; email?: string }) {
+    if (payload.role !== 'barber') throw new UnauthorizedException();
+    const barber = await this.prisma.barber.findUnique({ where: { id: payload.sub } });
+    if (!barber) throw new UnauthorizedException();
+    return { sub: barber.id, role: 'barber', email: barber.email };
+  }
 
 }

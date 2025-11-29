@@ -192,4 +192,33 @@ export class AuthService
             refreshToken,
         }
     }
+
+    async tryLogin(dto: LoginDto) {
+        const customer = await this.prisma.customer.findUnique({ where: { email: dto.email }});
+        if (!customer) return null;
+
+        const ok = await bcrypt.compare(dto.password, customer.password);
+        if (!ok) return null;
+
+        const { accessToken, refreshToken } = await this.generateTokens(customer.id, customer.email);
+        await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: { refreshToken: await bcrypt.hash(refreshToken, 12) },
+        });
+
+        return {
+            message: "Giriş başarılı",
+            role: "customer" as const,
+            userId: customer.id,
+            accessToken,
+            refreshToken,
+            user: {
+            id: customer.id,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            email: customer.email,
+            phone: customer.phone,
+            },
+        };
+    }
 }

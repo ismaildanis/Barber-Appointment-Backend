@@ -12,18 +12,23 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { UnifiedAuthController } from './unified-auth.controller';
+import { BarberAuthModule } from 'src/barber-auth/barber-auth.module';
+import { AdminAuthModule } from 'src/admin-auth/admin-auth.module';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
+    BarberAuthModule,
+    AdminAuthModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET!,
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN! },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UnifiedAuthController],
   providers: [
     AuthService,
     PrismaService,

@@ -36,12 +36,12 @@ export class AdminAuthController {
   @Post('logout')
   @UseGuards(JwtAdminGuard)
   logout(@Req() req: any) {
-    return this.adminAuthService.logout(req.admin.id);
+    return this.adminAuthService.logout(req.admin.sub);
   }
 
   @Get('me')
   @UseGuards(JwtAdminGuard)
   getMe(@Req() req: any) {
-    return this.adminAuthService.getMe(req.admin.id);
+    return this.adminAuthService.getMe(req.admin.sub);
   }
 }

@@ -16,7 +16,7 @@ export class AppointmentCron {
 
     constructor(private prisma: PrismaService) {}
 
-    @Cron('1 0 * * *')
+    @Cron('1 21 * * *')
     async expirePastAppointments() {
         const now = dayjs().tz('Europe/Istanbul');
         const newDayStart = now.startOf('day').toDate();

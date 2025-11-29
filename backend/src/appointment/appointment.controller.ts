@@ -19,7 +19,7 @@ export class AppointmentController
 
     index(@Req() req: any)
     {
-        return this.appointmentService.findAll(req.customer!.id)
+        return this.appointmentService.findAll(req.customer!.sub)
     }
 
     @Get('barber')
@@ -27,70 +27,73 @@ export class AppointmentController
 
     findForBarber(@Req() req: any)
     {
-        return this.appointmentService.findForBarber(req.barber!.id)
+        return this.appointmentService.findForBarber(req.user!.sub)
     }
 
     
     @Get('available-dates')
     @UseGuards(JwtAuthGuard)
+
     getAvailableDates(@Req() req: any)
     {
-        return this.appointmentService.getAvailableDates(req.customer!.id)
+        return this.appointmentService.getAvailableDates(req.customer!.sub)
     }
 
     @Get('available-hours/:barberId')
     @UseGuards(JwtAuthGuard)
+
 
     getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
     {
         if (!date) {
             throw new BadRequestException('Tarih zorunludur.');
         }
-        return this.appointmentService.getAvailableHours(req.customer!.id, barberId, date)
+        return this.appointmentService.getAvailableHours(req.customer!.sub, barberId, date)
     }
 
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     show(@Param('id', ParseIntPipe) id:number, @Req() req: any )
     {
-        return this.appointmentService.findOne(id, req.customer!.id)
+        return this.appointmentService.findOne(id, req.customer!.sub)
     }
 
     @Post()
     @UseGuards(JwtAuthGuard)
     create(@Body() dto: CreateAppointmentDto, @Req() req: any)
     {
-        return this.appointmentService.create(dto, req.customer!.id);
+        return this.appointmentService.create(dto, req.customer!.sub);
     }
 
     @Put(':id')
     @UseGuards(JwtAuthGuard)
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateAppointmentDto, @Req() req: any)
     {
-        return this.appointmentService.update(dto, req.customer!.id, id)
+        return this.appointmentService.update(dto, req.customer!.sub, id)
     }
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard)
     delete(@Param('id', ParseIntPipe) id: number, @Req() req: any)
     {
-        return this.appointmentService.delete(req.customer!.id, id)
+        return this.appointmentService.delete(req.customer!.sub, id)
     }
 
     @Post('mark-cancel/:id')
     @UseGuards(JwtAdminGuard)
     markCancel(@Param('id', ParseIntPipe) id: number, @Body() dto: MarkAppointmentDto , @Req() req: any){
-        return this.appointmentService.markCancel(req.admin!.id, id, dto)
+        return this.appointmentService.markCancel(req.admin!.sub, id, dto)
     }
     @Post('mark-completed/:id')
+    
     @UseGuards(JwtAdminGuard)
     markCompleted(@Param('id', ParseIntPipe) id: number, @Req() req: any){
-        return this.appointmentService.markCompleted(req.admin!.id, id)
+        return this.appointmentService.markCompleted(req.admin.sub, id)
     }
     @Post('mark-no-show/:id')
     @UseGuards(JwtAdminGuard)
     markNoShow(@Param('id', ParseIntPipe) id: number, @Req() req: any){
-        return this.appointmentService.markNoShow(req.admin!.id, id)
+        return this.appointmentService.markNoShow(req.user.sub, id)
     }
 
     @Post('barber-cancel/:id')
@@ -100,13 +103,13 @@ export class AppointmentController
     @Req() req: any,
     @Body() dto: BarberCancelDto
     ) {
-    return this.appointmentService.cancelByBarber(req.barber.id, id, dto);
+    return this.appointmentService.cancelByBarber(req.barber.sub, id, dto);
     }
 
     @Post('barber/break')
     @UseGuards(JwtBarberGuard)
     addBreak(@Req() req: any, @Body() dto: BreakDto) {
-    return this.appointmentService.addBreak(req.barber!.id, dto);
+    return this.appointmentService.addBreak(req.user.sub, dto);
     }
 
 

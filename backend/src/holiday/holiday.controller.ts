@@ -10,16 +10,16 @@ export class HolidayController {
 
     @Post()
     createHoliday(@Body() dto: CreateHolidayDto, @Req() req: any) {
-        return this.holidayService.create(req.admin.id, dto);
+        return this.holidayService.create(req.admin.sub, dto);
     }
 
     @Get()
     getAll(@Req() req: any) {
-        return this.holidayService.findAll(req.admin.id);
+        return this.holidayService.findAll(req.admin.sub);
     }
 
     @Delete(':id')
     remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-        return this.holidayService.remove(req.admin.id, id);
+        return this.holidayService.remove(req.admin.sub, id);
     }
 }

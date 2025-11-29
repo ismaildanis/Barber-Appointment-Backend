@@ -12,30 +12,30 @@ export class BarberController {
     @Post()
     @UseGuards(JwtAdminGuard)
     create(@Body() dto: CreateBarberDto, @Req() req: any) {
-        return this.barberService.create(dto, req.admin!.id);
+        return this.barberService.create(dto, req.admin!.sub);
     }
 
     @Get()
     @UseGuards(JwtAdminGuard)
     findAll(@Req() req: any) {
-        return this.barberService.findAll(req.admin!.id);
+        return this.barberService.findAll(req.admin!.sub);
     }
 
     @Get(':id')
     @UseGuards(JwtAdminGuard)
     findOne(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
-        return this.barberService.findOne(req.admin!.id, barberId);
+        return this.barberService.findOne(req.admin!.sub, barberId);
     }
 
     @Delete(':id')
     @UseGuards(JwtAdminGuard)
     delete(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
-        return this.barberService.delete(req.admin!.id, barberId);
+        return this.barberService.delete(req.admin!.sub, barberId);
     }
 
     @Put(':id')
     @UseGuards(JwtAdminGuard)
     isActive(@Req() req: any, @Param('id', ParseIntPipe) barberId: number, @Body() dto: ActivityBarberDto) {
-        return this.barberService.update(req.admin!.id, barberId, dto); 
+        return this.barberService.update(req.admin!.sub, barberId, dto); 
     }
 }

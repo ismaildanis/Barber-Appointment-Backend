@@ -17,6 +17,6 @@ import { JwtBarberRefreshStrategy } from './strategies/jwt-barber-refresh.strate
     ],
     controllers: [BarberAuthController],
     providers: [BarberAuthService, JwtBarberGuard, JwtBarberStrategy, JwtBarberRefreshGuard, JwtBarberRefreshStrategy],
-    exports: [JwtBarberGuard],
+    exports: [JwtBarberGuard, BarberAuthService],
 })
 export class BarberAuthModule {}

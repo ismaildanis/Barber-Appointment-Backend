@@ -33,7 +33,7 @@ export class AuthController {
     @Post('refresh')
     @UseGuards(JwtRefreshGuard)
     async refresh(@Req() req) {
-        const result = await this.authService.refreshTokens(req.customer.id);
+        const result = await this.authService.refreshTokens(req.customer.sub);
 
         return {
             accessToken: result.accessToken,
@@ -45,13 +45,12 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     logout(@Req() req: any) 
     {
-        return this.authService.logout(req.customer.id);
+        return this.authService.logout(req.customer.sub);
     }
 
-    @Get('me')
     @UseGuards(JwtAuthGuard)
-    getMe(@Req() req: any) 
-    {
-        return this.authService.getMe(req.customer.id);
+    @Get('me')
+    getMe(@Req() req: any) {
+        return this.authService.getMe(req.customer.sub);
     }
 }

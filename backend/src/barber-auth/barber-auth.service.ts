@@ -155,5 +155,34 @@ export class BarberAuthService {
             refreshToken,
         }
     }
+
+    async tryLogin(dto: LoginDto) {
+        const barber = await this.prisma.barber.findUnique({ where: { email: dto.email }});
+        if (!barber) return null;
+
+        const ok = await bcrypt.compare(dto.password, barber.password);
+        if (!ok) return null;
+
+        const { accessToken, refreshToken } = await this.generateToken(barber.id, barber.email);
+        await this.prisma.barber.update({
+            where: { id: barber.id },
+            data: { refreshToken: await bcrypt.hash(refreshToken, 12) },
+        });
+
+        return {
+            message: "Giriş başarılı",
+            role: "barber" as const,
+            userId: barber.id,
+            accessToken,
+            refreshToken,
+            user: {
+            id: barber.id,
+            firstName: barber.firstName,
+            lastName: barber.lastName,
+            email: barber.email,
+            phone: barber.phone,
+            },
+        };
+    }
         
 }

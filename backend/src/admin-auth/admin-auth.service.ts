@@ -157,4 +157,33 @@ export class AdminAuthService {
             refreshToken,
         }
     }
+
+    async tryLogin(dto: LoginDto) {
+        const admin = await this.prisma.admin.findUnique({ where: { email: dto.email }});
+        if (!admin) return null;
+
+        const ok = await bcrypt.compare(dto.password, admin.password);
+        if (!ok) return null;
+
+        const { accessToken, refreshToken } = await this.generateToken(admin.id, admin.email);
+        await this.prisma.admin.update({
+            where: { id: admin.id },
+            data: { refreshToken: await bcrypt.hash(refreshToken, 12) },
+        });
+
+        return {
+            message: "Giriş başarılı",
+            role: "admin" as const,
+            userId: admin.id,
+            accessToken,
+            refreshToken,
+            user: {
+            id: admin.id,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            email: admin.email,
+            phone: admin.phone,
+            },
+        };
+    }
 }

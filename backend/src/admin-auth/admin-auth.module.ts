@@ -17,6 +17,6 @@ import { JwtAdminRefreshStrategy } from './strategies/jwt-admin-refresh.strategy
   ],
   controllers: [AdminAuthController],
   providers: [AdminAuthService, JwtAdminStrategy, JwtAdminGuard, JwtAdminRefreshGuard, JwtAdminRefreshStrategy],
-  exports: [JwtAdminGuard],
+  exports: [JwtAdminGuard, AdminAuthService],
 })
 export class AdminAuthModule {}

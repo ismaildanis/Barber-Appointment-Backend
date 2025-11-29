@@ -31,7 +31,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
           throw new UnauthorizedException('Refresh token uyuşmuyor');
       }
 
-      return { id: customer.id };
+      return { sub: customer.id, role: 'customer' };
   }
 
 }

@@ -11,30 +11,30 @@ export class ServiceController {
   @Post()
   @UseGuards(JwtAdminGuard)
   create(@Body() dto: CreateServiceDto, @Req() req: any) {
-    return this.serviceService.create(req.admin!.id, dto);
+    return this.serviceService.create(req.admin!.sub, dto);
   }
 
   @Get()
   @UseGuards(JwtAdminGuard)
   findAll(@Req() req: any) {
-    return this.serviceService.findAll(req.admin!.id);
+    return this.serviceService.findAll(req.admin!.sub);
   }
 
   @Get(':id')
   @UseGuards(JwtAdminGuard)
   findOne(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
-    return this.serviceService.findOne(req.admin!.id, serviceId);
+    return this.serviceService.findOne(req.admin!.sub, serviceId);
   }
 
   @Put(':id')
   @UseGuards(JwtAdminGuard)
   update(@Param('id', ParseIntPipe) serviceId: number, @Body() dto: UpdateServiceDto, @Req() req: any) {
-    return this.serviceService.update(req.admin!.id,serviceId, dto);
+    return this.serviceService.update(req.admin!.sub, serviceId, dto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAdminGuard)
   delete(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
-    return this.serviceService.delete(req.admin!.id, serviceId);
+    return this.serviceService.delete(req.admin!.sub, serviceId);
   }
 }

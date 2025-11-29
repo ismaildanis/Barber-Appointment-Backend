@@ -5,10 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class JwtAdminRefreshStrategy extends PassportStrategy(
-  Strategy,
-  'jwt-admin-refresh'
-) {
+export class JwtAdminRefreshStrategy extends PassportStrategy(Strategy, 'jwt-admin-refresh') {
   constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
@@ -18,20 +15,14 @@ export class JwtAdminRefreshStrategy extends PassportStrategy(
     });
   }
 
-  async validate(payload: { sub: number }, req: any) {
-    const admin = await this.prisma.admin.findUnique({
-      where: { id: payload.sub },
-    });
-
-    if (!admin || !admin.refreshToken) {
-      throw new UnauthorizedException("Refresh token geçersiz");
-    }
+  async validate(payload: { sub: number; role?: string }, req: any) {
+    const admin = await this.prisma.admin.findUnique({ where: { id: payload.sub } });
+    if (!admin || !admin.refreshToken) throw new UnauthorizedException('Refresh token geçersiz');
 
     const requestToken = req.body.refreshToken;
-
     const isMatch = await bcrypt.compare(requestToken, admin.refreshToken);
-    if (!isMatch) throw new UnauthorizedException("Refresh token uyuşmuyor");
+    if (!isMatch) throw new UnauthorizedException('Refresh token uyuşmuyor');
 
-    return { id: admin.id };
+    return { sub: admin.id, role: 'admin' };
   }
 }
