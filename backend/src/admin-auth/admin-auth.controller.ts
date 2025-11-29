@@ -9,55 +9,33 @@ export class AdminAuthController {
   constructor(private adminAuthService: AdminAuthService) {}
 
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res) {
-    return this.adminAuthService.login(dto).then((result) => {
-        res.cookie("adminAccessToken", result.accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 60 * 60 * 1000,
-        });
-        res.cookie("adminRefreshToken", result.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000, 
-        });
+  async login(@Body() dto: LoginDto) {
+    const result = await this.adminAuthService.login(dto);
 
-        return { message: result.message };
-    });
+    return {
+      message: result.message,
+      role: result.role,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    };
   }
 
   @Post('refresh')
   @UseGuards(JwtAdminRefreshGuard)
-  async refresh(@Req() req, @Res({ passthrough: true }) res) {
+  async refresh(@Req() req) {
     const adminId = req.admin.id;
 
     const result = await this.adminAuthService.refreshTokens(adminId);
 
-    res.cookie('adminAccessToken', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie('adminRefreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return { message: 'Yenilendi' };
+    return {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    };
   }
-
 
   @Post('logout')
   @UseGuards(JwtAdminGuard)
-  logout(@Req() req: any, @Res({ passthrough: true }) res) {
-    res.clearCookie('adminAccessToken');
-    res.clearCookie('adminRefreshToken');
+  logout(@Req() req: any) {
     return this.adminAuthService.logout(req.admin.id);
   }
 

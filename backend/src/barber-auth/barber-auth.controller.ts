@@ -9,56 +9,32 @@ export class BarberAuthController {
     constructor(private barberAuthService: BarberAuthService) {}
 
     @Post('login')
-    login(@Body() dto: LoginDto, @Res({passthrough: true}) res) {
-        return this.barberAuthService.login(dto).then((result) => {
-
-            res.cookie("barberAccessToken", result.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 60 * 60 * 1000,
-            });
-
-            res.cookie("barberRefreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000, 
-            });
-
-            return ({ message: result.message })
-        })
+    async login(@Body() dto: LoginDto) {
+        const result = await this.barberAuthService.login(dto);
+        return {
+            message: result.message,
+            role: result.role,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken
+        };
     }
 
     @Post('refresh')
     @UseGuards(JwtBarberRefreshGuard)
-    async refresh(@Req() req, @Res({ passthrough: true }) res) {
+    async refresh(@Req() req) {
         const barberId = req.barber.id;
 
         const result = await this.barberAuthService.refreshTokens(barberId);
 
-        res.cookie("barberAccessToken", result.accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15 * 60 * 1000,
-        });
-
-        res.cookie("barberRefreshToken", result.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        return { message: "Yenilendi" };
+        return {
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+        };
     }
 
     @Post('logout')
     @UseGuards(JwtBarberGuard)
-    logout(@Req() req: any, @Res({passthrough: true}) res) {
-        res.clearCookie('barberAccessToken');
-        res.clearCookie('barberRefreshToken');
+    logout(@Req() req: any) {
         return this.barberAuthService.logout(req.barber.id);
     }
 

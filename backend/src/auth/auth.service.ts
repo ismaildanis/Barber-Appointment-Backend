@@ -79,6 +79,7 @@ export class AuthService
         return {
             message: "Giriş başarılı",
             customerId: customer.id,
+            role: "customer",
             accessToken,
             refreshToken,
         }
@@ -139,9 +140,8 @@ export class AuthService
             throw new UnauthorizedException('Refresh token bulunamadı');
         }
 
-        // Yeni token üret
         const accessToken = await this.jwt.signAsync(
-            { sub: customerId },
+            { sub: customerId, role: "customer" },
             {
                 secret: process.env.JWT_SECRET,
                 expiresIn: process.env.JWT_EXPIRES_IN,
@@ -149,7 +149,7 @@ export class AuthService
         );
 
         const newRefreshToken = await this.jwt.signAsync(
-            { sub: customerId },
+            { sub: customerId, role: "customer" },
             {
                 secret: process.env.REFRESH_SECRET,
                 expiresIn: process.env.REFRESH_EXPIRES_IN,
@@ -172,7 +172,7 @@ export class AuthService
     async generateTokens(customerId: number, email:string)
     {   
         const accessToken = await this.jwt.signAsync(
-            {sub: customerId, email},
+            {sub: customerId, email, role: "customer"},
             {
                 secret: process.env.JWT_SECRET!,
                 expiresIn: process.env.JWT_EXPIRES_IN!,
@@ -180,7 +180,7 @@ export class AuthService
         )
 
         const refreshToken = await this.jwt.signAsync(
-            { sub: customerId, email}, 
+            { sub: customerId, email, role: "customer"}, 
             {
                 secret: process.env.REFRESH_SECRET!,
                 expiresIn: process.env.REFRESH_EXPIRES_IN!,

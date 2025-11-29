@@ -19,65 +19,32 @@ export class AuthController {
     }
 
     @Post('login')
-    login(@Body() dto: LoginDto, @Res({passthrough: true}) res) 
-    {
-        return this.authService.login(dto).then((result) => {
-            res.cookie("accessToken", result.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 60 * 60 * 1000,
-            });
-            res.cookie("refreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000, 
-            });
+    async login(@Body() dto: LoginDto) {
+        const result = await this.authService.login(dto);
 
-            return { message: result.message };
-        });
+        return {
+            message: result.message,
+            role: result.role,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+        };
     }
 
     @Post('refresh')
     @UseGuards(JwtRefreshGuard)
-    async refresh(@Req() req, @Res({ passthrough: true }) res) {
-        const user = req.user;
+    async refresh(@Req() req) {
+        const result = await this.authService.refreshTokens(req.customer.id);
 
-        const result = await this.authService.refreshTokens(user.id);
-
-        res.cookie("accessToken", result.accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15 * 60 * 1000,
-        });
-
-        res.cookie("refreshToken", result.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        return { message: "Yenilendi" };
+        return {
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+        };
     }
 
     @Post('logout')
     @UseGuards(JwtAuthGuard)
-    logout(@Req() req: any, @Res({passthrough: true}) res) 
+    logout(@Req() req: any) 
     {
-        res.clearCookie('accessToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-        });
-        res.clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-        });
-        
         return this.authService.logout(req.customer.id);
     }
 

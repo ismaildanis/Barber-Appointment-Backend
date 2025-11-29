@@ -11,9 +11,7 @@ export class JwtBarberRefreshStrategy extends PassportStrategy(
 ) {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies?.barberRefreshToken || null,
-      ]),
+      jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
       ignoreExpiration: false,
       secretOrKey: process.env.REFRESH_SECRET,
       passReqToCallback: true,
@@ -29,7 +27,7 @@ export class JwtBarberRefreshStrategy extends PassportStrategy(
       throw new UnauthorizedException('Refresh token bulunamadı');
     }
 
-    const incomingToken = req.cookies.barberRefreshToken;
+    const incomingToken = req.body.refreshToken;
 
     const isMatch = await bcrypt.compare(incomingToken, barber.refreshToken);
     if (!isMatch) {

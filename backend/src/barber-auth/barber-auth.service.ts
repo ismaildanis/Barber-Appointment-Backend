@@ -11,7 +11,7 @@ export class BarberAuthService {
         private jwt: JwtService
     ) {}
 
-    async login(dto) {
+    async login(dto: LoginDto) {
         const barber = await this.prisma.barber.findUnique({where: { email: dto.email }})
 
         if(!barber) {
@@ -39,6 +39,7 @@ export class BarberAuthService {
 
         return {
             message: "Giriş başarılı",
+            role: "barber",
             barber: barber.id,
             accessToken,
             refreshToken,
@@ -55,7 +56,7 @@ export class BarberAuthService {
         }
 
         const accessToken = await this.jwt.signAsync(
-            { sub: barberId },
+            { sub: barberId, role: "barber" },
             {
                 secret: process.env.JWT_SECRET,
                 expiresIn: process.env.JWT_EXPIRES_IN,
@@ -63,7 +64,7 @@ export class BarberAuthService {
         );
 
         const newRefreshToken = await this.jwt.signAsync(
-            { sub: barberId },
+            { sub: barberId, role: "barber" },
             {
                 secret: process.env.REFRESH_SECRET,
                 expiresIn: process.env.REFRESH_EXPIRES_IN,
@@ -134,7 +135,7 @@ export class BarberAuthService {
     async generateToken(barberId: number, email:string) {
 
         const accessToken = await this.jwt.signAsync(
-            {sub: barberId, email},
+            {sub: barberId, email, role: "barber"},
             {
                 secret: process.env.JWT_SECRET!,
                 expiresIn: process.env.JWT_EXPIRES_IN!,
@@ -142,7 +143,7 @@ export class BarberAuthService {
         )
 
         const refreshToken = await this.jwt.signAsync(
-            { sub: barberId, email}, 
+            { sub: barberId, email, role: "barber"}, 
             {
                 secret: process.env.REFRESH_SECRET!,
                 expiresIn: process.env.REFRESH_EXPIRES_IN!,

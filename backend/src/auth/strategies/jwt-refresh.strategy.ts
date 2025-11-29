@@ -8,9 +8,7 @@ import * as bcrypt from 'bcrypt';
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies?.refreshToken || null,
-      ]),
+      jwtFromRequest: ExtractJwt.fromBodyField("refreshToken"),
       ignoreExpiration: false,
       secretOrKey: process.env.REFRESH_SECRET,
       passReqToCallback: true,
@@ -18,22 +16,22 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   }
 
   async validate(payload: { sub: number }, req: any) {
-    const customer = await this.prisma.customer.findUnique({
-        where: { id: payload.sub },
-    });
+      const customer = await this.prisma.customer.findUnique({
+          where: { id: payload.sub },
+      });
 
-    if (!customer || !customer.refreshToken) {
-        throw new UnauthorizedException('Refresh token geçersiz');
-    }
+      if (!customer || !customer.refreshToken) {
+          throw new UnauthorizedException('Refresh token geçersiz');
+      }
 
-    const requestToken = req.cookies.refreshToken;
+      const requestToken = req.body.refreshToken;
 
-    const isMatch = await bcrypt.compare(requestToken, customer.refreshToken);
-    if (!isMatch) {
-        throw new UnauthorizedException('Refresh token uyuşmuyor');
-    }
+      const isMatch = await bcrypt.compare(requestToken, customer.refreshToken);
+      if (!isMatch) {
+          throw new UnauthorizedException('Refresh token uyuşmuyor');
+      }
 
-    return { id: customer.id };
-    }
+      return { id: customer.id };
+  }
 
 }

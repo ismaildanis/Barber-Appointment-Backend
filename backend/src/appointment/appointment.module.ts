@@ -7,17 +7,19 @@ import { ConflictValidator } from './validators/conflict.validator';
 import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourValidator } from './validators/working-hours.validator';
 import { WorkingHourService } from './working-hour.service';
+import { AppointmentCron } from './cron/appointment.cron';
 
 @Module({
   controllers: [AppointmentController],
   providers: [
     WorkingHourService,
-    AppointmentService, 
+    AppointmentService,  
     AppointmentHolidayService, 
     DateRangeService, 
     ConflictValidator, 
     TimeRangeValidator, 
     WorkingHourValidator,
+    AppointmentCron
   ],
   exports: [AppointmentService]
 })

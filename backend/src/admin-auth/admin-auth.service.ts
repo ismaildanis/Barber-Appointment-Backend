@@ -46,6 +46,7 @@ export class AdminAuthService {
         return {
             message: "Giriş başarılı",
             adminId: admin.id,
+            role: "admin",
             accessToken,
             refreshToken,
         }
@@ -104,7 +105,7 @@ export class AdminAuthService {
         }
 
         const accessToken = await this.jwt.signAsync(
-            { sub: adminId },
+            { sub: adminId, role: "admin" },
             {
             secret: process.env.JWT_SECRET,
             expiresIn: process.env.JWT_EXPIRES_IN,
@@ -112,7 +113,7 @@ export class AdminAuthService {
         );
 
         const newRefreshToken = await this.jwt.signAsync(
-            { sub: adminId },
+            { sub: adminId, role: "admin" },
             {
             secret: process.env.REFRESH_SECRET,
             expiresIn: process.env.REFRESH_EXPIRES_IN,
@@ -136,7 +137,7 @@ export class AdminAuthService {
     async generateToken(customerId: number, email:string)
     {   
         const accessToken = await this.jwt.signAsync(
-            {sub: customerId, email},
+            {sub: customerId, email, role: "admin"},
             {
                 secret: process.env.JWT_SECRET!,
                 expiresIn: process.env.JWT_EXPIRES_IN!,
@@ -144,7 +145,7 @@ export class AdminAuthService {
         )
 
         const refreshToken = await this.jwt.signAsync(
-            { sub: customerId, email}, 
+            { sub: customerId, email, role: "admin"}, 
             {
                 secret: process.env.REFRESH_SECRET!,
                 expiresIn: process.env.REFRESH_EXPIRES_IN!,

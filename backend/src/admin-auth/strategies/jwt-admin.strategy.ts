@@ -7,9 +7,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies?.adminAccessToken || null,
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET,
       
