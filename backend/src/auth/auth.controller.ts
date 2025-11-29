@@ -8,7 +8,10 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) {}
-
+    @Get("test")
+    test() {
+        return { message: "Backend çalışıyor 🚀" };
+    }
     @Post('register')
     register(@Body() dto: RegisterDto) 
     {
