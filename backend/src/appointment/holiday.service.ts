@@ -16,7 +16,7 @@ export class AppointmentHolidayService {
 
         const holiday = await this.prisma.holidayDate.findFirst({
             where: {
-                date: date.toDate()
+                date: new Date(date.format('YYYY-MM-DD'))
             }
         })
         

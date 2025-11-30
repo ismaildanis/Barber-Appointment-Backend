@@ -41,8 +41,6 @@ export class AppointmentController
 
     @Get('available-hours/:barberId')
     @UseGuards(JwtAuthGuard)
-
-
     getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
     {
         if (!date) {
@@ -72,11 +70,11 @@ export class AppointmentController
         return this.appointmentService.update(dto, req.customer!.sub, id)
     }
 
-    @Delete(':id')
+    @Put('cancel/:id')
     @UseGuards(JwtAuthGuard)
-    delete(@Param('id', ParseIntPipe) id: number, @Req() req: any)
+    cancelAppointment(@Param('id', ParseIntPipe) id: number, @Req() req: any)
     {
-        return this.appointmentService.delete(req.customer!.sub, id)
+        return this.appointmentService.cancelByCustomer(req.customer!.sub, id)
     }
 
     @Post('mark-cancel/:id')
@@ -106,7 +104,7 @@ export class AppointmentController
     return this.appointmentService.cancelByBarber(req.barber.sub, id, dto);
     }
 
-    @Post('barber/break')
+    @Post('barber-break')
     @UseGuards(JwtBarberGuard)
     addBreak(@Req() req: any, @Body() dto: BreakDto) {
     return this.appointmentService.addBreak(req.user.sub, dto);

@@ -44,8 +44,8 @@ export class ServiceService {
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     
     try {
-      await this.prisma.service.update({where: {id: serviceId}, data: updateServiceDto})
-      return {message: 'Hizmet başarıyla güncellendi'}
+      const result = await this.prisma.service.update({where: {id: serviceId}, data: updateServiceDto})
+      return {message: 'Hizmet başarıyla güncellendi', data: result}
     } catch (error) {
       throw new Error(error)
     }

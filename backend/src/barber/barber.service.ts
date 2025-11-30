@@ -56,6 +56,7 @@ export class BarberService {
                 lastName: true,
                 email: true,
                 phone: true,
+                active: true
             }
         });
         if(!barbers) {throw new NotFoundException("Berber bulunamadı")}
@@ -78,6 +79,7 @@ export class BarberService {
                 lastName: true,
                 email: true,
                 phone: true,
+                active: true
             }
         });
 

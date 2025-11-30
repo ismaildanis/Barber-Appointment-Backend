@@ -128,7 +128,7 @@ export class AppointmentService {
     }
   }
 
-  async delete(customerId: number, appointmentId: number) {
+  async cancelByCustomer(customerId: number, appointmentId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
 
@@ -137,8 +137,17 @@ export class AppointmentService {
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
 
-    await this.prisma.appointment.delete({ where: { id: appointmentId } });
-    return { message: 'Randevu silindi' };
+    if (appt.status != 'SCHEDULED') throw new BadRequestException('Randevu iptal edilemez');
+
+    const result = await this.prisma.appointment.update({ 
+      where: { 
+        id: appointmentId 
+      } ,
+      data: {
+        status: 'CANCELLED'
+      }
+    });
+    return { message: 'Randevu iptal edildi', result};
   }
 
   async getAvailableDates(customerId: number) {
