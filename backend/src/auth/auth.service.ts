@@ -102,6 +102,7 @@ export class AuthService
             lastName: customer.lastName,
             email: customer.email,
             phone: customer.phone,
+            role: "customer",
         }
     }
 

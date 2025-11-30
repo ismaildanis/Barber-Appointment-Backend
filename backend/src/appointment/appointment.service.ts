@@ -185,6 +185,9 @@ export class AppointmentService {
     const markAppointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId } });
     
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
+    if (markAppointment.status == "CANCELLED") {throw new BadRequestException("Bu randevu zaten iptal edilmiş")}
+    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
+    
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {cancelReason: dto.cancelReason, status: "CANCELLED", cancelledAt: new Date() }})
       return {message: "Randevu iptal edildi olarak işaretlendi"}
@@ -199,6 +202,9 @@ export class AppointmentService {
     const markAppointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
+    if (markAppointment.status == "COMPLETED") {throw new BadRequestException("Bu randevu zaten tamamlandı")}
+    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu tamamlandı olarak işaretlenemez")}
+
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "COMPLETED"}})
       return {message: "Randevu onaylandı olarak işaretlendi"}
@@ -214,6 +220,8 @@ export class AppointmentService {
     const markAppointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId } });
   
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
+    if (markAppointment.status == "NO_SHOW") {throw new BadRequestException("Bu randevu zaten gelinmedi olarak işaretlenmiş")}
+    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu gelinmedi olarak işaretlenemez")}
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "NO_SHOW"}})
       return {message: "Randevuya gelinmedi olarak işaretlendi"}
@@ -229,16 +237,15 @@ export class AppointmentService {
       where: { id: appointmentId, barberId },
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    if (appt.status != 'SCHEDULED') throw new BadRequestException('Randevu iptal edilemez');
     await this.prisma.appointment.update({ where: { id: appointmentId }, data: { status: dto.status, cancelReason: dto.cancelReason, cancelledAt: new Date() } });
     return { message: 'Randevu iptal edildi' };
   }
 
   async addBreak(barberId: number, dto: BreakDto) {
-    // 1) Berber var mı?
     const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
     if (!barber) throw new NotFoundException("Berber bulunamadı");
 
-    // 2) Bugünün çalışma planını bul
     const day = dayjs().tz("Europe/Istanbul");
     const work = await this.prisma.workingHour.findFirst({
       where: { barberId, dayOfWeek: day.day() }
@@ -246,7 +253,6 @@ export class AppointmentService {
 
     if (!work) throw new NotFoundException("Bugün çalışma saati tanımlı değil");
 
-    // 3) BreakPeriod ekle
     const breakPeriod = await this.prisma.breakPeriod.create({
       data: {
         workingHourId: work.id,
@@ -255,7 +261,6 @@ export class AppointmentService {
       }
     });
 
-    // 4) Bu aralığa denk gelen randevuları iptal et
     const start = day.startOf("day").add(dto.startMin, "minute").toDate();
     const end   = day.startOf("day").add(dto.endMin, "minute").toDate();
 
@@ -276,8 +281,6 @@ export class AppointmentService {
     return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
   }
 
-
-  
   private handleUniqueError(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       const t = String(e.meta?.target ?? '');

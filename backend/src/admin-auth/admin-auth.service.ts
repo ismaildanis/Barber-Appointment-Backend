@@ -70,6 +70,7 @@ export class AdminAuthService {
             lastName: admin.lastName,
             email: admin.email,
             phone: admin.phone,
+            role: "admin",
         }
     }
 

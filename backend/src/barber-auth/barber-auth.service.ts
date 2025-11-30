@@ -128,7 +128,8 @@ export class BarberAuthService {
             email: barber.email,
             firstName: barber.firstName,
             lastName: barber.lastName,
-            phone: barber.phone
+            phone: barber.phone,
+            role: "barber",
         }
     }
 

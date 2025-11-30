@@ -20,7 +20,7 @@ export class DateRangeService {
         const result: string[] = [];
         let current = dayjs().tz('Europe/Istanbul').startOf('day');
         
-        while (result.length < 5) {
+        while (result.length < 365) {
             const dateStr = current.format('YYYY-MM-DD');
 
             const isHoliday = await this.holidayService.isHoliday(dateStr);
