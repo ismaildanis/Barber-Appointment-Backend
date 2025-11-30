@@ -36,7 +36,7 @@ export class AppointmentController
 
     getAvailableDates(@Req() req: any)
     {
-        return this.appointmentService.getAvailableDates(req.customer!.sub)
+        return this.appointmentService.getAvailableDates(req.user!.sub)
     }
 
     @Get('available-hours/:barberId')

@@ -15,6 +15,10 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { UnifiedAuthController } from './unified-auth.controller';
 import { BarberAuthModule } from 'src/barber-auth/barber-auth.module';
 import { AdminAuthModule } from 'src/admin-auth/admin-auth.module';
+import { JwtUnifiedRefreshGuard } from './guards/jwt-unified-refresh.guard';
+import { JwtUnifiedGuard } from './guards/jwt-unified.guard';
+import { JwtUnifiedRefreshStrategy } from './strategies/jwt-unified-refresh.strategy';
+import { JwtUnifiedStrategy } from './strategies/jwt-unified-strategy';
 
 @Module({
   imports: [
@@ -36,6 +40,11 @@ import { AdminAuthModule } from 'src/admin-auth/admin-auth.module';
     JwtRefreshStrategy,
     JwtRefreshGuard,
     JwtAuthGuard,
+    JwtUnifiedRefreshGuard,
+    JwtUnifiedGuard,
+    JwtUnifiedRefreshStrategy,
+    JwtUnifiedStrategy
   ],
+  exports: [JwtRefreshGuard, JwtAuthGuard, JwtUnifiedRefreshGuard, JwtUnifiedGuard, JwtUnifiedStrategy, JwtUnifiedRefreshStrategy, ],
 })
 export class AuthModule {}
