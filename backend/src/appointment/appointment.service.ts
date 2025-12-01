@@ -42,6 +42,27 @@ export class AppointmentService {
     return appt;
   }
 
+  async lastCompleted(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
+
+    const appt = await this.prisma.appointment.findFirst({
+      where: { customerId, status: Status.COMPLETED },
+      orderBy: { createdAt: 'desc' },
+       include: {
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        service: {
+          select: { id: true, name: true },
+        }
+      },
+    });
+    return appt ?? null;
+  }
+
+  
+
   async create(dto: any, customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
@@ -153,7 +174,7 @@ export class AppointmentService {
   async getAvailableDates(customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
-    return this.dateRangeService.getAvailableDates();
+    return await this.dateRangeService.getAvailableDates();
   }
 
   async getAvailableHours(customerId: number, barberId: number, date: string) {

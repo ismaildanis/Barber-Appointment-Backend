@@ -16,9 +16,8 @@ export class BarberController {
     }
 
     @Get()
-    @UseGuards(JwtAdminGuard)
     findAll(@Req() req: any) {
-        return this.barberService.findAll(req.admin!.sub);
+        return this.barberService.findAll();
     }
 
     @Get(':id')

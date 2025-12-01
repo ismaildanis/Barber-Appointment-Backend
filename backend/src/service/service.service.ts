@@ -18,9 +18,7 @@ export class ServiceService {
     }
   }
 
-  async findAll(adminId: number) {
-    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
-    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+  async findAll() {
 
     const services = await this.prisma.service.findMany()
     if(!services) throw new NotFoundException('Hizmetler bulunamadı')

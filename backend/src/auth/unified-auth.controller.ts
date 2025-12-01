@@ -24,7 +24,7 @@ export class UnifiedAuthController {
     if (admin) return admin;
     throw new UnauthorizedException('Email veya şifre yanlış');
   }
-
+ 
   @UseGuards(JwtUnifiedGuard)
   @Get('me')
   async me(@Req() req: any) {

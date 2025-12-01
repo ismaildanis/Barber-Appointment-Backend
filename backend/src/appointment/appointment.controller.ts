@@ -49,6 +49,12 @@ export class AppointmentController
         return this.appointmentService.getAvailableHours(req.customer!.sub, barberId, date)
     }
 
+    @Get('last')
+    @UseGuards(JwtAuthGuard)
+    lastAppt(@Req() req: any) {
+        return this.appointmentService.lastCompleted(req.customer.sub);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     show(@Param('id', ParseIntPipe) id:number, @Req() req: any )

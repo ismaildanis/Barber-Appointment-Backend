@@ -40,15 +40,7 @@ export class BarberService {
         }
     }
 
-    async findAll(adminId: number) {
-        const admin = await this.prisma.admin.findUnique({
-            where: {
-                id: adminId
-            }
-        })
-
-        if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
-
+    async findAll() {
         const barbers = await this.prisma.barber.findMany({
             select: {
                 id: true,

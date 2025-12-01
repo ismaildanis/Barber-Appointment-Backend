@@ -3,6 +3,8 @@ import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtUnifiedGuard } from 'src/auth/guards/jwt-unified.guard';
 
 @Controller('service')
 export class ServiceController {
@@ -15,9 +17,8 @@ export class ServiceController {
   }
 
   @Get()
-  @UseGuards(JwtAdminGuard)
   findAll(@Req() req: any) {
-    return this.serviceService.findAll(req.admin!.sub);
+    return this.serviceService.findAll();
   }
 
   @Get(':id')
