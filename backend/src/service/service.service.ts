@@ -3,11 +3,11 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Multer } from 'multer';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ServiceService {
-
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private config: ConfigService) {}
   async create(adminId: number, dto: CreateServiceDto) {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
@@ -20,19 +20,27 @@ export class ServiceService {
   }
 
   async findAll() {
-
+    const baseUrl = this.config.get<string>('APP_BASE_URL');
     const services = await this.prisma.service.findMany()
     if(!services) throw new NotFoundException('Hizmetler bulunamadı')
-    return services
+
+    return services.map(b => ({
+        ...b,
+        image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.svg"}`
+    }));
   }
 
   async findOne(adminId: number, serviceId: number) {
+    const baseUrl = this.config.get<string>('APP_BASE_URL');
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
     const service = await this.prisma.service.findUnique({where: {id: serviceId}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
-    return service
+    return {
+      ...service,
+      image: service.image ? `${baseUrl}/${service.image}` : null
+    }
   }
 
   async update(adminId: number, serviceId: number, updateServiceDto: UpdateServiceDto) {

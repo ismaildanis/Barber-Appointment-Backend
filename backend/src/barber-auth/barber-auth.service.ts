@@ -3,12 +3,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BarberAuthService {
     constructor(
         private prisma: PrismaService,
-        private jwt: JwtService
+        private jwt: JwtService,
+        private config: ConfigService
     ) {}
 
     async login(dto: LoginDto) {
@@ -112,7 +114,7 @@ export class BarberAuthService {
     }
 
     async getMe(barberId: number) {
-
+        const baseUrl = this.config.get<string>('APP_BASE_URL');
         const barber = await this.prisma.barber.findUnique({
             where: {
                 id: barberId
@@ -129,6 +131,7 @@ export class BarberAuthService {
             firstName: barber.firstName,
             lastName: barber.lastName,
             phone: barber.phone,
+            image: `${baseUrl}/${barber.image}`,
             role: "barber",
         }
     }
