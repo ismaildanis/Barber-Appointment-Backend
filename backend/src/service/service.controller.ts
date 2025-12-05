@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Req, ParseIntPipe, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { JwtUnifiedGuard } from 'src/auth/guards/jwt-unified.guard';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('service')
 export class ServiceController {
-  constructor(private readonly serviceService: ServiceService) {}
+  constructor(private readonly serviceService: ServiceService, private readonly config: ConfigService) {}
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -25,6 +27,26 @@ export class ServiceController {
   @UseGuards(JwtAdminGuard)
   findOne(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
     return this.serviceService.findOne(req.admin!.sub, serviceId);
+  }
+
+  @Post('/image/:id')
+  @UseGuards(JwtAdminGuard)
+  @UseInterceptors(FileInterceptor('file')) 
+  uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
+      const fileName = `${req.admin.sub}-${Date.now()}.jpg`;
+      const folder = `uploads/services`;
+      const filePath = `${folder}/${fileName}`;
+
+      fs.mkdirSync(folder, { recursive: true });
+      fs.writeFileSync(filePath, file.buffer);
+
+      return this.serviceService.uploadImage(req.admin.sub, serviceId, filePath);
+  }
+
+  @Put('/image/:id')
+  @UseGuards(JwtAdminGuard)
+  deleteImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number) {
+      return this.serviceService.deleteImage(req.admin.sub, serviceId);
   }
 
   @Put(':id')

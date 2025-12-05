@@ -16,12 +16,17 @@ import { BarberAuthService } from './barber-auth/barber-auth.service';
 import { BarberAuthModule } from './barber-auth/barber-auth.module';
 import { HolidayModule } from './holiday/holiday.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
+
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
 
     ThrottlerModule.forRoot([
       {

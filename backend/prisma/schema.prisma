@@ -38,6 +38,7 @@ model Barber {
   phone        String
   password     String
   active       Boolean       @default(true)
+  image        String?
   refreshToken String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -89,6 +90,7 @@ model Service {
   description  String?
   price        Decimal       @db.Decimal(10, 2)
   duration     Int
+  image        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

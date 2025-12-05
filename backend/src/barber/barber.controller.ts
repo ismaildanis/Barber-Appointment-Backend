@@ -1,13 +1,17 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { BarberService } from './barber.service';
 import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { CreateBarberDto } from './dto/create-barber.dto';
 import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
 import { ActivityBarberDto } from './dto/activity-barber.dto';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('barber')
 export class BarberController {
-    constructor(private barberService: BarberService) {}
+    constructor(private barberService: BarberService, private config: ConfigService) {}
 
     @Post()
     @UseGuards(JwtAdminGuard)
@@ -16,7 +20,7 @@ export class BarberController {
     }
 
     @Get()
-    findAll(@Req() req: any) {
+    findAll() {
         return this.barberService.findAll();
     }
 
@@ -30,6 +34,26 @@ export class BarberController {
     @UseGuards(JwtAdminGuard)
     delete(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
         return this.barberService.delete(req.admin!.sub, barberId);
+    }
+
+    @Post('/image')
+    @UseGuards(JwtBarberGuard)
+    @UseInterceptors(FileInterceptor('file'))
+    uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+        const fileName = `${req.barber.sub}-${Date.now()}.jpg`;
+        const folder = `uploads/barbers`;
+        const filePath = `${folder}/${fileName}`;
+
+        fs.mkdirSync(folder, { recursive: true });
+        fs.writeFileSync(filePath, file.buffer);
+
+        return this.barberService.uploadImage(req.barber.sub, filePath);
+    }
+
+    @Put('/image')
+    @UseGuards(JwtBarberGuard)
+    deleteImage(@Req() req: any) {
+        return this.barberService.deleteImage(req.barber.sub);
     }
 
     @Put(':id')

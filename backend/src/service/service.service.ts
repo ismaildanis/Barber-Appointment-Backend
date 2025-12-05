@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Multer } from 'multer';
 
 @Injectable()
 export class ServiceService {
@@ -48,6 +49,40 @@ export class ServiceService {
       throw new Error(error)
     }
       
+  }
+
+  async uploadImage(adminId: number, serviceId: number, imageUrl: string) {
+    const admin = await this.prisma.admin.findUnique({
+        where: { id: adminId }
+    });
+
+    if (!admin) {
+        throw new UnauthorizedException("Admin bulunamadı");
+    }
+
+    await this.prisma.service.update({
+        where: { id: serviceId },
+        data: { image: imageUrl }
+    });
+
+    return { message: "Resim başarıyla yüklendi" };
+  }
+
+  async deleteImage(adminId: number, serviceId: number) {
+    const admin = await this.prisma.admin.findUnique({
+        where: { id: adminId }
+    });
+
+    if (!admin) {
+        throw new UnauthorizedException("Admin bulunamadı");
+    }
+
+    await this.prisma.service.update({
+        where: { id: serviceId },
+        data: { image: null }
+    });
+
+    return { message: "Resim başarıyla silindi" };
   }
 
   async delete(adminId: number, serviceId: number) {

@@ -4,11 +4,12 @@ import { CreateBarberDto } from './dto/create-barber.dto';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ActivityBarberDto } from './dto/activity-barber.dto';
+import { ConfigService } from '@nestjs/config';
 
 
 @Injectable()
 export class BarberService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService, private config: ConfigService) {}
 
     async create(dto: CreateBarberDto, adminId: number) {
         const admin = await this.prisma.admin.findUnique({
@@ -123,6 +124,40 @@ export class BarberService {
         } catch (error) {
             throw new Error(error)
         }
+    }
+
+    async uploadImage(barberId: number, imageUrl: string) {
+        const barber = await this.prisma.barber.findUnique({
+            where: { id: barberId }
+        });
+
+        if (!barber) {
+            throw new UnauthorizedException("Berber bulunamadı");
+        }
+
+        await this.prisma.barber.update({
+            where: { id: barberId },
+            data: { image: imageUrl }
+        });
+
+        return { message: "Resim başarıyla yüklendi" };
+    }
+
+    async deleteImage(barberId: number) {
+        const barber = await this.prisma.barber.findUnique({
+            where: { id: barberId }
+        });
+
+        if (!barber) {
+            throw new UnauthorizedException("Berber bulunamadı");
+        }
+
+        await this.prisma.barber.update({
+            where: { id: barberId },
+            data: { image: null }
+        });
+
+        return { message: "Resim başarıyla silindi" };
     }
 
     private handleUniqueError(e: unknown): never {
