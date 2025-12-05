@@ -135,11 +135,22 @@ export class BarberService {
             throw new UnauthorizedException("Berber bulunamadı");
         }
 
+        
+        const isImageExists = await this.prisma.barber.findUnique({
+            where: { id: barberId },
+            select: { image: true }
+        });
+        
+        
+        if (isImageExists?.image != null) {
+            throw new ConflictException("Zaten bir resim bulunmakta");
+        }
+
         await this.prisma.barber.update({
             where: { id: barberId },
             data: { image: imageUrl }
         });
-
+        
         return { message: "Resim başarıyla yüklendi" };
     }
 

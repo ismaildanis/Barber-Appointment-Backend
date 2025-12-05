@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -58,6 +58,15 @@ export class ServiceService {
 
     if (!admin) {
         throw new UnauthorizedException("Admin bulunamadı");
+    }
+
+    const isImageExists = await this.prisma.service.findUnique({
+        where: { id: serviceId },
+        select: { image: true }
+    });
+
+    if (isImageExists?.image != null) {
+        throw new ConflictException("Zaten bir resim bulunmakta");
     }
 
     await this.prisma.service.update({
