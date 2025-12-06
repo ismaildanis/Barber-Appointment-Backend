@@ -53,8 +53,12 @@ export class AppointmentService {
         barber: {
           select: { id: true, firstName: true, lastName: true },
         },
-        service: {
-          select: { id: true, name: true },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true },
+            }
+          }
         }
       },
     });
@@ -71,7 +75,7 @@ export class AppointmentService {
 
     this.timeRange.validateNotPast(requestStartAt);
 
-    this.timeRange.validateSlotMinutes(requestStartAt, 15); // slot size
+    this.timeRange.validateSlotMinutes(requestStartAt, 15);
 
     const customerAppt = await this.prisma.appointment.findFirst({
       where: {
@@ -94,15 +98,18 @@ export class AppointmentService {
       throw new ConflictException('Bu gün için randevu alınamaz (Tatil veya kapalı gün).');
     }
 
-    const service = await this.prisma.service.findUnique({
-      where: { id: dto.serviceId },
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: dto.serviceIds } },
       select: { duration: true },
     });
-    if (!service) throw new NotFoundException("Servis bulunamadı");
 
+    if (!services.length) throw new NotFoundException("Hizmet bulunamadı");
+    if (services.length !== dto.serviceIds.length) throw new NotFoundException("Bazı hizmetler yok");
+    const totalDuration = services.reduce((acc, s) => acc + s.duration, 0);
     const apptStartAt = dayjs(dto.appointmentStartAt);
-    const apptEndAt = apptStartAt.add(service.duration, "minute");
+    const apptEndAt = apptStartAt.add(totalDuration, "minute");
 
+    console.log(apptStartAt, apptEndAt);
     await this.work.workingValidate(dto, apptStartAt, apptEndAt);
 
     const hasConflict = await this.conflict.conflictValidate(dto, apptStartAt, apptEndAt);
@@ -111,8 +118,17 @@ export class AppointmentService {
     }
 
     try {
-      return await this.prisma.appointment.create({
-        data: { ...dto, customerId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate() },
+      return await this.prisma.$transaction(async (tx) => {
+        const appt = await tx.appointment.create({
+          data: { barberId: dto.barberId, customerId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate(), notes: dto.notes },
+        });
+        await tx.appointmentService.createMany({
+          data: dto.serviceIds.map((id: number) => ({
+            appointmentId: appt.id,
+            serviceId: id,
+          }))
+        })
+        return appt;
       });
     } catch (e) {
       this.handleUniqueError(e);
