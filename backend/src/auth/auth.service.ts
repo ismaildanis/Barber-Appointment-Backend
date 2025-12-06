@@ -136,7 +136,7 @@ export class AuthService
         const customer = await this.prisma.customer.findUnique({
             where: { id: customerId },
         });
-
+        
         if (!customer || !customer.refreshToken) {
             throw new UnauthorizedException('Refresh token bulunamadı');
         }
@@ -148,15 +148,13 @@ export class AuthService
                 expiresIn: process.env.JWT_EXPIRES_IN,
             }
         );
-
         const newRefreshToken = await this.jwt.signAsync(
             { sub: customerId, role: "customer" },
             {
                 secret: process.env.REFRESH_SECRET,
                 expiresIn: process.env.REFRESH_EXPIRES_IN,
-            }
+            },
         );
-
         const hashed = await bcrypt.hash(newRefreshToken, 12);
 
         await this.prisma.customer.update({

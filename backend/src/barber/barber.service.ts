@@ -59,7 +59,7 @@ export class BarberService {
 
         return barbers.map(b => ({
             ...b,
-            image: b.image ? `${baseUrl}/${b.image}` : null
+            image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
         }));
     }
 

@@ -26,7 +26,7 @@ export class ServiceService {
 
     return services.map(b => ({
         ...b,
-        image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.svg"}`
+        image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
     }));
   }
 
@@ -39,7 +39,7 @@ export class ServiceService {
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     return {
       ...service,
-      image: service.image ? `${baseUrl}/${service.image}` : null
+      image: service.image ? `${baseUrl}/${service.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
     }
   }
 

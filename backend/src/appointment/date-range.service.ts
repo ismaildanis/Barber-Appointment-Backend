@@ -66,17 +66,15 @@ export class DateRangeService {
         while (current.isBefore(end)) {
 
             if (target.isBefore(today)) return [];
-
+            
             if (target.isSame(today, "day") && current.isBefore(today)) {
                 current = current.add(interval, "minute");
                 continue;
             }
 
-
             result.push(current.format("HH:mm"));
             current = current.add(interval, "minute");
         }
-
         return result;
     }
 
