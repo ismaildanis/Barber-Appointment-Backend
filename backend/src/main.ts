@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 const cookieParser = require('cookie-parser');
 import * as utc from 'dayjs/plugin/utc';
@@ -26,6 +26,14 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
     }),
+    new ValidationPipe({
+      exceptionFactory: (errors) => {
+        const messages = errors.flatMap(err =>
+          Object.values(err.constraints ?? {}).map(msg => msg)
+        );
+        return new BadRequestException(messages);
+      },
+    })
   );
 
   app.use(helmet());

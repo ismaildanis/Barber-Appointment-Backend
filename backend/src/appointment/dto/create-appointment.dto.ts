@@ -1,13 +1,14 @@
-import { IsNotEmpty, IsString, IsInt, IsDateString, IsOptional } from "class-validator";
+import { IsNotEmpty, IsString, IsInt, IsDateString, IsOptional, ArrayNotEmpty, IsArray } from "class-validator";
 
 export class CreateAppointmentDto {
     @IsNotEmpty()
     @IsInt()
     barberId: number;
 
-    @IsNotEmpty()
-    @IsInt()
-    serviceId: number;
+    @IsArray()
+    @ArrayNotEmpty()
+    @IsInt({ each: true })
+    serviceIds: number[];
 
     @IsNotEmpty()
     @IsDateString()

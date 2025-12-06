@@ -25,17 +25,13 @@ export class WorkingHourService {
             throw new BadRequestException("Tarih formatı YYYY-MM-DD olmalıdır.");
         }
         const d = dayjs.tz(date, "YYYY-MM-DD", "Europe/Istanbul");
-        if (!d.isValid()) {
-            throw new BadRequestException("Geçersiz bir tarih girdiniz.");
-        }
+        if (!d.isValid()) throw new BadRequestException("Geçersiz tarih");
         return d;
     }
-
     async getDailyHours(barberId: number, date: string) {
         const day = this.validateDate(date);
         
         const today = dayjs().tz('Europe/Istanbul');
-
         if (await this.holiday.isHoliday(date)) return [];
 
         const work = await this.prisma.workingHour.findFirst({
@@ -51,7 +47,11 @@ export class WorkingHourService {
         let current = start;
 
         while (current.isBefore(end)) {
-            
+
+            if (current.isSame(today, "day") && current.isBefore(today)) {
+                current = current.add(slot, "minute");
+                continue;
+            }
             hours.push(current.format("HH:mm"));
             current = current.add(slot, "minute");
         }
@@ -60,51 +60,45 @@ export class WorkingHourService {
     }
 
     async getBusyHours(barberId: number, date: string) {
-        const day = this.validateDate(date);
-
-        const work = await this.prisma.workingHour.findFirst({
-            where: { barberId, dayOfWeek: day.day() }
-        });
+        const day = dayjs(date, "YYYY-MM-DD");
+        const dow = day.day();                 
+        const work = await this.prisma.workingHour.findFirst({ where: { barberId, dayOfWeek: dow } });
         if (!work) return [];
 
         const slotSize = work.slotSize === "MIN30" ? 30 : 15;
-
         const start = day.startOf("day").add(work.startMin, "minute");
         const end   = day.startOf("day").add(work.endMin, "minute");
 
         const allSlots: string[] = [];
-        let cursor = start;
-
-        while (cursor.isBefore(end)) {
-            allSlots.push(cursor.format("HH:mm"));
-            cursor = cursor.add(slotSize, "minute");
+        for (let c = start; c.isBefore(end); c = c.add(slotSize, "minute")) {
+            allSlots.push(c.format("HH:mm"));
         }
 
         const appointments = await this.prisma.appointment.findMany({
             where: {
                 barberId,
                 status: Status.SCHEDULED,
-                appointmentStartAt: { lt: end.toDate() },
-                appointmentEndAt: { gt: start.toDate() },
+                appointmentStartAt: { lt: end.toDate() }, 
+                appointmentEndAt:   { gt: start.toDate() },
             },
-            select: { appointmentStartAt: true, appointmentEndAt: true }
+            select: { appointmentStartAt: true, appointmentEndAt: true },
         });
 
         const breaks = await this.prisma.breakPeriod.findMany({
             where: { workingHourId: work.id },
-            select: { startMin: true, endMin: true }
+            select: { startMin: true, endMin: true },
         });
 
         const busySlots: string[] = [];
-
         for (const slot of allSlots) {
-            const slotStart = dayjs(`${date} ${slot}`);
-            const slotEnd = slotStart.add(slotSize, "minute");
+            const slotStart = dayjs(`${date} ${slot}`, "YYYY-MM-DD HH:mm");
+            const slotEnd   = slotStart.add(slotSize, "minute");
 
-            const overlapsAppt = appointments.some(app =>
-                slotStart.toDate() < app.appointmentEndAt &&
-                slotEnd.toDate() > app.appointmentStartAt
-            );
+            const overlapsAppt = appointments.some(app => {
+                const apptStart = dayjs(app.appointmentStartAt);
+                const apptEnd   = dayjs(app.appointmentEndAt);
+                return slotStart.isBefore(apptEnd) && slotEnd.isAfter(apptStart);
+            });
 
             const overlapsBreak = breaks.some(br => {
                 const brStart = day.startOf("day").add(br.startMin, "minute");

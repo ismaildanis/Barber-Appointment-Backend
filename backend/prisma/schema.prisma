@@ -63,7 +63,6 @@ model Appointment {
   id            Int        @id @default(autoincrement())
   customerId    Int
   barberId      Int
-  serviceId     Int
   
   appointmentStartAt DateTime
   appointmentEndAt   DateTime
@@ -77,7 +76,8 @@ model Appointment {
 
   customer      Customer   @relation(fields: [customerId], references: [id])
   barber        Barber     @relation(fields: [barberId], references: [id])
-  service       Service    @relation(fields: [serviceId], references: [id])
+
+  appointmentServices AppointmentService[]
 
   @@index([barberId, appointmentStartAt])
   @@index([appointmentStartAt, appointmentEndAt])
@@ -94,7 +94,15 @@ model Service {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  appointments Appointment[]
+  appointmentServices AppointmentService[]
+}
+
+model AppointmentService {
+  id            Int          @id @default(autoincrement())
+  appointmentId Int
+  serviceId     Int
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  service       Service     @relation(fields: [serviceId], references: [id])
 }
 
 enum Range {

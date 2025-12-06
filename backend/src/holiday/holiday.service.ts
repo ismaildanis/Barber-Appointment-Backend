@@ -37,8 +37,7 @@ export class HolidayService {
           status: 'CANCELLED'
         }
       });
-      console.log(result.date);
-      console.log(res);
+
       return result
     } catch (error) {
       throw new Error(error);

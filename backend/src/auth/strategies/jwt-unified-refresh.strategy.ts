@@ -15,7 +15,7 @@ export class JwtUnifiedRefreshStrategy extends PassportStrategy(Strategy, 'unifi
     });
   }
 
-  async validate(payload: { sub: number; role: 'customer' | 'barber' | 'admin' }, req: any) {
+  async validate(req: any, payload: { sub: number; role: 'customer' | 'barber' | 'admin' }) {
     const token = req.body.refreshToken;
     if (!token) throw new UnauthorizedException('Refresh token yok');
 
