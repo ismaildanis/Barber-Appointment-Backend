@@ -11,6 +11,7 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @Injectable()
 export class AppointmentService {
@@ -28,7 +29,19 @@ export class AppointmentService {
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     return this.prisma.appointment.findMany({
       where: { customerId },
-      orderBy: { appointmentStartAt: 'asc' },
+      orderBy: { appointmentStartAt: 'desc' },
+      include: {
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true },
+            }
+          }
+        }
+      }
     });
   }
 
@@ -37,6 +50,18 @@ export class AppointmentService {
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     const appt = await this.prisma.appointment.findFirst({
       where: { id: appointmentId, customerId },
+      include: {
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true },
+            }
+          }
+        }
+      }
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     return appt;
