@@ -29,7 +29,7 @@ export class AppointmentService {
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
     return this.prisma.appointment.findMany({
       where: { customerId },
-      orderBy: { appointmentStartAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         barber: {
           select: { id: true, firstName: true, lastName: true },
@@ -73,6 +73,29 @@ export class AppointmentService {
 
     const appt = await this.prisma.appointment.findFirst({
       where: { customerId, status: Status.COMPLETED },
+      orderBy: { createdAt: 'desc' },
+       include: {
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true },
+            }
+          }
+        }
+      },
+    });
+    return appt ?? null;
+  }
+
+  async lastScheduled(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
+
+    const appt = await this.prisma.appointment.findFirst({
+      where: { customerId, status: Status.SCHEDULED },
       orderBy: { createdAt: 'desc' },
        include: {
         barber: {

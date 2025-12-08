@@ -55,6 +55,12 @@ export class AppointmentController
         return this.appointmentService.lastCompleted(req.customer.sub);
     }
 
+    @Get('last-scheduled')
+    @UseGuards(JwtAuthGuard)
+    lastApptScheduled(@Req() req: any) {
+        return this.appointmentService.lastScheduled(req.customer.sub);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     show(@Param('id', ParseIntPipe) id:number, @Req() req: any )
