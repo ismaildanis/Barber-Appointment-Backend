@@ -133,6 +133,7 @@ export class BarberAuthService {
             phone: barber.phone,
             image: `${baseUrl}/${barber.image}`,
             role: "barber",
+            active: barber.active
         }
     }
 

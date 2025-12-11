@@ -424,39 +424,46 @@ export class AppointmentService {
     const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
     if (!barber) throw new NotFoundException("Berber bulunamadı");
 
+    if (dto.endMin == dto.startMin || dto.startMin >= dto.endMin) throw new BadRequestException("Gecersiz saat aralığı");
+
     const day = dayjs().tz("Europe/Istanbul");
     const work = await this.prisma.workingHour.findFirst({
       where: { barberId, dayOfWeek: day.day() }
     });
 
     if (!work) throw new NotFoundException("Bugün çalışma saati tanımlı değil");
+    if(work.startMin >= dto.startMin || work.endMin <= dto.endMin) throw new BadRequestException("Gecersiz saatt aralığı");
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const breakPeriod = await tx.breakPeriod.create({
+          data: {
+            workingHourId: work.id,
+            startMin: dto.startMin,
+            endMin: dto.endMin,
+          }
+        });
+      
+        const start = day.startOf("day").add(dto.startMin, "minute").toDate();
+        const end   = day.startOf("day").add(dto.endMin, "minute").toDate();
 
-    const breakPeriod = await this.prisma.breakPeriod.create({
-      data: {
-        workingHourId: work.id,
-        startMin: dto.startMin,
-        endMin: dto.endMin,
-      }
-    });
-
-    const start = day.startOf("day").add(dto.startMin, "minute").toDate();
-    const end   = day.startOf("day").add(dto.endMin, "minute").toDate();
-
-    await this.prisma.appointment.updateMany({
-      where: {
-        barberId,
-        status: Status.SCHEDULED,
-        appointmentStartAt: { lt: end },
-        appointmentEndAt: { gt: start }
-      },
-      data: {
-        status: Status.BARBER_CANCELLED,
-        cancelReason: "Berber mola verdi",
-        cancelledAt: new Date()
-      }
-    });
-
-    return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
+        await tx.appointment.updateMany({
+          where: {
+            barberId,
+            status: Status.SCHEDULED,
+            appointmentStartAt: { lt: end },
+            appointmentEndAt: { gt: start }
+          },
+          data: {
+            status: Status.BARBER_CANCELLED,
+            cancelReason: "Berber mola verdi",
+            cancelledAt: new Date()
+          }
+        });
+        return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
+      })
+    } catch (error) {
+      throw this.handleWorkinHourError(error);
+    }
   }
 
   private handleUniqueError(e: unknown): never {
@@ -469,6 +476,17 @@ export class AppointmentService {
         throw new ConflictException('Zaten bir randevunuz var');
       }
       throw new ConflictException('Tekrarlanan kayıt');
+    }
+    throw e;
+  }
+
+  private handleWorkinHourError(e:unknown): never {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      const t = String(e.meta?.target ?? '');
+      if (t.includes('workingHourId') && t.includes('startMin') && t.includes('endMin')) {
+        throw new ConflictException('Bu süre için mola zaten var');
+      }
+    
     }
     throw e;
   }
