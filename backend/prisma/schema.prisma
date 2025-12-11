@@ -132,6 +132,7 @@ model BreakPeriod {
   endMin     Int
 
   workingHour WorkingHour @relation(fields: [workingHourId], references: [id])
+  @@unique([workingHourId, startMin, endMin])
 }
 
 model HolidayDate {
