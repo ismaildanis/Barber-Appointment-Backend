@@ -25,10 +25,27 @@ export class AppointmentController
     @Get('barber')
     @UseGuards(JwtBarberGuard)
 
-    findForBarber(@Req() req: any)
+    findForBarber(@Query('date') date: string, @Req() req: any)
     {
-        return this.appointmentService.findForBarber(req.user!.sub)
+        return this.appointmentService.findForBarber(req.user!.sub, date) 
     }
+
+    @Get('barber/today')
+    @UseGuards(JwtBarberGuard)
+
+    findBarberTodayAppointments(@Req() req: any)
+    {
+        return this.appointmentService.findBarberTodayAppointments(req.user!.sub)
+    }
+    
+    @Get('barber/:id')
+    @UseGuards(JwtBarberGuard)
+
+    findOneForBarber(@Param('id', ParseIntPipe) id: number, @Req() req: any)
+    {
+        return this.appointmentService.findOneForBarber(req.user!.sub, id)
+    }
+
 
     
     @Get('available-dates')

@@ -74,7 +74,7 @@ export class AppointmentService {
     const appt = await this.prisma.appointment.findFirst({
       where: { customerId, status: Status.COMPLETED },
       orderBy: { createdAt: 'desc' },
-       include: {
+      include: {
         barber: {
           select: { id: true, firstName: true, lastName: true },
         },
@@ -258,18 +258,102 @@ export class AppointmentService {
     }
   }
 
-
-  async findForBarber(barberId: number) {
+  async findOneForBarber(barberId: number, appointmentId: number) {
     const barber = await this.prisma.barber.findUnique({
       where: { id: barberId },
     });
-
+ 
     if (!barber) throw new NotFoundException('Berber bulunamadı');
 
-    return await this.prisma.appointment.findMany({
-      where: { barberId },
-      orderBy: { appointmentStartAt: 'asc' },
+    const appts = await this.prisma.appointment.findFirst({
+      where: { 
+        id: appointmentId,
+        barberId
+      },  
+      include: { 
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        customer: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      },
     });
+    if (!appts) throw new NotFoundException('Randevu bulunamadı');
+    return appts;
+  }
+
+  async findForBarber(barberId: number, date: string) {
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: barberId },
+    });
+ 
+    if (!barber) throw new NotFoundException('Berber bulunamadı');
+    const start = dayjs(date).startOf('day').toDate();
+    const end = dayjs(date).add(1, 'day').startOf('day').toDate();
+
+    const appts = await this.prisma.appointment.findMany({
+      where: { 
+        barberId,
+        appointmentStartAt: {
+          ...(date ? { gte: start, lt: end} : {}),
+        },
+      },
+      orderBy: { appointmentStartAt: 'asc' },
+      
+      include: { 
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        customer: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      },
+    });
+    if (!appts) throw new NotFoundException('Randevu bulunamadı');
+    return appts;
+  }
+
+  async findBarberTodayAppointments(barberId: number) {
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: barberId },
+    });
+ 
+    if (!barber) throw new NotFoundException('Berber bulunamadı');
+    const today = dayjs().tz('Europe/Istanbul').format('YYYY-MM-DD');
+    const start = dayjs(today).startOf('day').toDate();
+    const end = dayjs(today).add(1, 'day').startOf('day').toDate();
+
+    const appts = await this.prisma.appointment.findMany({
+      where: { 
+        barberId,
+        appointmentStartAt: { gte: start, lt: end },
+      },
+      orderBy: { appointmentStartAt: 'asc' },
+      
+      include: { 
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        customer: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      },
+    });
+    if (!appts) throw new NotFoundException('Randevu bulunamadı');
+    return appts;
   }
 
   async markCancel(adminId: number, appointmentId: number, dto: MarkAppointmentDto) {
