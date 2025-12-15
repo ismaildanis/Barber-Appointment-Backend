@@ -17,6 +17,8 @@ import { BarberAuthModule } from './barber-auth/barber-auth.module';
 import { HolidayModule } from './holiday/holiday.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { WorkingHourController } from './working-hour/working-hour.controller';
+import { WorkingHourModule } from './working-hour/working-hour.module';
 
 @Module({
   imports: [
@@ -34,15 +36,16 @@ import { ConfigModule } from '@nestjs/config';
         limit: 50, // en fazla 50 istek
       },
     ]),
-
+    WorkingHourModule,
     AppointmentModule,
     ServiceModule,
     BarberModule,
     AdminAuthModule,
     BarberAuthModule,
     HolidayModule,
+    WorkingHourModule,
   ],
-  controllers: [AppController, BarberController, BarberAuthController],
+  controllers: [AppController, BarberController, BarberAuthController, WorkingHourController],
   providers: [AppService, BarberAuthService],
 })
 export class AppModule {}

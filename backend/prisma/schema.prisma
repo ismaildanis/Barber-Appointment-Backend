@@ -42,6 +42,7 @@ model Barber {
   refreshToken String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
 
   appointments Appointment[]
   workingHours  WorkingHour[]
@@ -93,6 +94,7 @@ model Service {
   image        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
 
   appointmentServices AppointmentService[]
 }
@@ -122,7 +124,7 @@ model WorkingHour {
   breaks   BreakPeriod[]
 
   @@index([barberId, dayOfWeek])
-  @@unique([barberId, dayOfWeek, startMin, endMin])
+  @@unique([barberId, dayOfWeek])
 }
 
 model BreakPeriod {

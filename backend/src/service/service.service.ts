@@ -21,7 +21,7 @@ export class ServiceService {
 
   async findAll() {
     const baseUrl = this.config.get<string>('APP_BASE_URL');
-    const services = await this.prisma.service.findMany()
+    const services = await this.prisma.service.findMany({where: {deletedAt: null}})
     if(!services) throw new NotFoundException('Hizmetler bulunamadı')
 
     return services.map(b => ({
@@ -32,10 +32,10 @@ export class ServiceService {
 
   async findOne(adminId: number, serviceId: number) {
     const baseUrl = this.config.get<string>('APP_BASE_URL');
-    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId }})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
-    const service = await this.prisma.service.findUnique({where: {id: serviceId}})
+    const service = await this.prisma.service.findUnique({where: {id: serviceId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     return {
       ...service,
@@ -47,7 +47,7 @@ export class ServiceService {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
-    const service = await this.prisma.service.findUnique({where: {id: serviceId}})
+    const service = await this.prisma.service.findUnique({where: {id: serviceId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     
     try {
@@ -103,12 +103,18 @@ export class ServiceService {
   }
 
   async delete(adminId: number, serviceId: number) {
-    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
-    if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) throw new UnauthorizedException('Admin bulunamadı');
 
-    const service = this.prisma.service.findUnique({where: {id: serviceId}})
-    if(!service) throw new NotFoundException('Hizmet bulunamadı')
-    this.prisma.service.delete({where: {id: serviceId}})
-    return {message: 'Hizmet başarıyla silindi'} 
+    const service = await this.prisma.service.findFirst({
+      where: { id: serviceId, deletedAt: null },
+    });
+    if (!service) throw new NotFoundException('Hizmet bulunamadı');
+
+    await this.prisma.service.update({
+      where: { id: serviceId },
+      data: { deletedAt: new Date(), image: null },
+    });
+    return { message: 'Hizmet silindi' };
   }
 }
