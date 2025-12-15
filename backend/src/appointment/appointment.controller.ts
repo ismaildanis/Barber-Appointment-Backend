@@ -8,6 +8,7 @@ import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
+import { Status } from '@prisma/client';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -20,6 +21,14 @@ export class AppointmentController
     index(@Req() req: any)
     {
         return this.appointmentService.findAll(req.customer!.sub)
+    }
+
+    @Get('/admin')
+    @UseGuards(JwtAdminGuard)
+
+    indexAdmin(@Query('status') status: Status, @Req() req: any)
+    {
+        return this.appointmentService.indexAdmin(req.user!.sub, status)
     }
 
     @Get('barber')
@@ -83,6 +92,13 @@ export class AppointmentController
     show(@Param('id', ParseIntPipe) id:number, @Req() req: any )
     {
         return this.appointmentService.findOne(id, req.customer!.sub)
+    }
+
+    @Get('/admin/:id')
+    @UseGuards(JwtAdminGuard)
+    findOneAdmin(@Param('id', ParseIntPipe) id:number, @Req() req: any )
+    {
+        return this.appointmentService.findOneAdmin(id, req.user!.sub)
     }
 
     @Post()

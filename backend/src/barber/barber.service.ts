@@ -44,6 +44,7 @@ export class BarberService {
     async findAll() {
         const baseUrl = this.config.get<string>('APP_BASE_URL');
         const barbers = await this.prisma.barber.findMany({
+            where: { deletedAt: null },
             select: {
                 id: true,
                 firstName: true,
@@ -71,7 +72,8 @@ export class BarberService {
 
         const barber = await this.prisma.barber.findUnique({
             where: {
-                id: barberId
+                id: barberId,
+                deletedAt: null
             },
             select: {
                 id: true,
@@ -99,15 +101,19 @@ export class BarberService {
 
         const barber = await this.prisma.barber.findUnique({
             where: {
+                deletedAt: null,
                 id: barberId
             }
         });
 
         if(!barber) {throw new NotFoundException("Berber bulunamadı")}
 
-        this.prisma.barber.delete({
+        await this.prisma.barber.update({
             where: {
-                id: barberId
+                id: barberId, deletedAt: null
+            },
+            data: {
+                deletedAt: new Date()
             }
         })
 
@@ -120,7 +126,7 @@ export class BarberService {
     async update(adminId: number, barberId: number, dto: ActivityBarberDto) {
         const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
         if (!admin) {throw new UnauthorizedException("Admin bulunamadı")}
-        const barber = await this.prisma.barber.findUnique({ where: {id: barberId } })
+        const barber = await this.prisma.barber.findUnique({ where: {id: barberId, deletedAt: null } })
         if (!barber) {throw new NotFoundException("Berber bulunamadı")}
         try {
             await this.prisma.barber.update({
@@ -139,7 +145,7 @@ export class BarberService {
 
     async uploadImage(barberId: number, imageUrl: string) {
         const barber = await this.prisma.barber.findUnique({
-            where: { id: barberId }
+            where: { id: barberId, deletedAt: null }
         });
 
         if (!barber) {
@@ -148,7 +154,7 @@ export class BarberService {
 
         
         const isImageExists = await this.prisma.barber.findUnique({
-            where: { id: barberId },
+            where: { id: barberId, deletedAt: null },
             select: { image: true }
         });
         
@@ -158,7 +164,7 @@ export class BarberService {
         }
 
         await this.prisma.barber.update({
-            where: { id: barberId },
+            where: { id: barberId, deletedAt: null },
             data: { image: imageUrl }
         });
         
@@ -167,7 +173,7 @@ export class BarberService {
 
     async deleteImage(barberId: number) {
         const barber = await this.prisma.barber.findUnique({
-            where: { id: barberId }
+            where: { id: barberId, deletedAt: null }
         });
 
         if (!barber) {
@@ -175,7 +181,7 @@ export class BarberService {
         }
 
         await this.prisma.barber.update({
-            where: { id: barberId },
+            where: { id: barberId, deletedAt: null },
             data: { image: null }
         });
 

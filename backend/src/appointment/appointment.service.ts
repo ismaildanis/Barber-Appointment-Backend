@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
-import dayjs = require('dayjs');
 import { DateRangeService } from './date-range.service';
 import { MarkAppointmentDto } from './dto/mark-appointment.dto';
 import { ConflictValidator } from './validators/conflict.validator';
@@ -11,8 +10,8 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
+import dayjs = require('dayjs');
 @Injectable()
 export class AppointmentService {
   constructor(
@@ -24,6 +23,56 @@ export class AppointmentService {
       private workinHours: WorkingHourService
   ) {}
 
+
+  async indexAdmin(adminId: number, status: Status) {
+    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) throw new UnauthorizedException('Admin bulunamadı');
+    const appts =  await this.prisma.appointment.findMany({ 
+      where: { status },
+      orderBy: { createdAt: 'desc' }, 
+      include: { 
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true, price: true, duration: true },
+            }
+          }
+        },
+        customer: {
+          select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+        }
+      }
+    });
+
+    return appts;
+  }
+  async findOneAdmin(appointmentId: number, adminId: number) {
+    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) throw new UnauthorizedException('Admin bulunamadı');
+    const appt = await this.prisma.appointment.findUnique({ 
+      where: { id: appointmentId },
+      include: { 
+        barber: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        appointmentServices: {
+          include: {
+            service: {
+              select: { id: true, name: true, price: true, duration: true },
+            }
+          }
+        },
+        customer: {
+          select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+        }
+      }
+    });
+    if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    return appt;
+  }
   async findAll(customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
@@ -364,7 +413,7 @@ export class AppointmentService {
     
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
     if (markAppointment.status == "CANCELLED") {throw new BadRequestException("Bu randevu zaten iptal edilmiş")}
-    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
+    if (markAppointment.status != "SCHEDULED" && markAppointment.status != "EXPIRED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
     
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {cancelReason: dto.cancelReason, status: "CANCELLED", cancelledAt: new Date() }})
@@ -381,7 +430,7 @@ export class AppointmentService {
 
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
     if (markAppointment.status == "COMPLETED") {throw new BadRequestException("Bu randevu zaten tamamlandı")}
-    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu tamamlandı olarak işaretlenemez")}
+    if (markAppointment.status != "SCHEDULED" && markAppointment.status != "EXPIRED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
 
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "COMPLETED"}})
@@ -399,7 +448,7 @@ export class AppointmentService {
   
     if (!markAppointment) throw new NotFoundException('Randevu bulunamadı');
     if (markAppointment.status == "NO_SHOW") {throw new BadRequestException("Bu randevu zaten gelinmedi olarak işaretlenmiş")}
-    if (markAppointment.status != "SCHEDULED") {throw new BadRequestException("Bu randevu gelinmedi olarak işaretlenemez")}
+    if (markAppointment.status != "SCHEDULED" && markAppointment.status != "EXPIRED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "NO_SHOW"}})
       return {message: "Randevuya gelinmedi olarak işaretlendi"}
