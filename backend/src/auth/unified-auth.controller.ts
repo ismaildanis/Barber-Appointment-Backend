@@ -1,10 +1,13 @@
-import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Req } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Req, NotFoundException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { BarberAuthService } from '../barber-auth/barber-auth.service';
 import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { JwtUnifiedGuard } from './guards/jwt-unified.guard';
 import { JwtUnifiedRefreshGuard } from './guards/jwt-unified-refresh.guard';
+import { ForgotDto } from './dto/forgot.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('unified-auth')
 export class UnifiedAuthController {
@@ -12,6 +15,7 @@ export class UnifiedAuthController {
     private readonly customerAuth: AuthService,
     private readonly barberAuth: BarberAuthService,
     private readonly adminAuth: AdminAuthService,
+    private readonly jwt: JwtService
   ) {}
 
   @Post('login')
@@ -52,6 +56,43 @@ export class UnifiedAuthController {
     if (role === 'customer') return this.customerAuth.logout(sub);
     if (role === 'barber')   return this.barberAuth.logout(sub);
     if (role === 'admin')    return this.adminAuth.logout(sub);
+    throw new UnauthorizedException();
+  }
+
+  @Post('forgot')
+  async forgot(@Body() dto: ForgotDto) {
+    await Promise.all([
+      this.customerAuth.forgot(dto),
+      this.barberAuth.forgot(dto),
+      this.adminAuth.forgot(dto),
+    ]);
+    return { message: 'Eğer kayıtlıysanız e-posta gönderildi' };
+  }
+  
+  @Post('verify-reset')
+  async verifyReset(@Body() dto: { email: string; code: string }) {
+    const r =
+      (await this.customerAuth.verifyReset(dto)) ||
+      (await this.barberAuth.verifyReset(dto)) ||
+      (await this.adminAuth.verifyReset(dto));
+    if (r?.resetSessionId) return r;
+    return { message: 'Sıfırlama kodu geçersiz' };
+  }
+  
+  @Post('reset-password')
+  async resetPassword(@Body() dto: { resetSessionId: string; newPassword: string }) {
+    let payload: any;
+    try {
+      payload = await this.jwt.verifyAsync(dto.resetSessionId, { secret: process.env.RESET_SECRET });
+    } catch {
+      throw new UnauthorizedException('Reset token geçersiz veya süresi doldu');
+    }
+    if (payload.purpose !== 'password-reset') throw new UnauthorizedException();
+
+    const role = payload.role;
+    if (role === 'customer') return this.customerAuth.resetPassword(payload.email, dto.newPassword);
+    if (role === 'barber')   return this.barberAuth.resetPassword(payload.email, dto.newPassword);
+    if (role === 'admin')    return this.adminAuth.resetPassword(payload.email, dto.newPassword);
     throw new UnauthorizedException();
   }
 }

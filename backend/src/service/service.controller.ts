@@ -6,7 +6,7 @@ import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 
 @Controller('service')
 export class ServiceController {
@@ -31,9 +31,9 @@ export class ServiceController {
 
   @Post('/image/:id')
   @UseGuards(JwtAdminGuard)
-  @UseInterceptors(FileInterceptor('file')) 
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
-      const fileName = `${req.admin.sub}-${Date.now()}.jpg`;
+      const fileName = `service-${Date.now()}.jpg`;
       const folder = `uploads/services`;
       const filePath = `${folder}/${fileName}`;
 

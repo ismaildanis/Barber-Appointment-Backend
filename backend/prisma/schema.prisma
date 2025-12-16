@@ -143,3 +143,17 @@ model HolidayDate {
   reason      String
   createdAt   DateTime @default(now())
 }
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String?
+  phone     String?
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([expiresAt])
+}

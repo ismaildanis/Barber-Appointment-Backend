@@ -4,15 +4,16 @@ import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
-
-
+import { MailerService } from '@nestjs-modules/mailer';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class AuthService 
 {
     constructor(
         private prisma: PrismaService,
-        private jwt: JwtService
+        private jwt: JwtService,
+        private mailer: MailerService,
     ) {}
 
     async register(dto: RegisterDto)
@@ -219,5 +220,72 @@ export class AuthService
             phone: customer.phone,
             },
         };
+    }
+
+    async forgot(dto: { email: string }) {
+        const customer = await this.prisma.customer.findUnique({ where: { email: dto.email } });
+        if (!customer) return { message: 'Reset kodu gönderildi' };
+
+        const code = randomInt(0, 1_000_000).toString().padStart(6, '0')
+
+        const tokenHash = await bcrypt.hash(code, 12);
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        await this.prisma.passwordReset.create({
+            data: { email: dto.email, tokenHash: tokenHash, expiresAt },
+        });
+          await this.mailer.sendMail({
+            to: dto.email,
+            subject: 'Şifre sıfırlama kodu',
+            text: `Kodunuz: ${code} (30 dk geçerli)`,
+            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+        });
+        return { message: "Sıfırlama kodu e-posta ile gönderildi"}
+    }
+
+    async verifyReset(dto: { email: string; code: string }) {
+        const passwordReset = await this.prisma.passwordReset.findFirst({
+            where: {
+            email: dto.email,
+            usedAt: null,
+            expiresAt: { gt: new Date() },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (!passwordReset) {
+            return { message: 'Sıfırlama kodu geçersiz' };
+        }
+
+        const ok = await bcrypt.compare(dto.code, passwordReset.tokenHash);
+        if (!ok) {
+            return { message: 'Sıfırlama kodu geçersiz' };
+        }
+
+        const resetSessionId = await this.jwt.signAsync(
+            { email: dto.email, role: 'customer', purpose: 'password-reset' },
+            { secret: process.env.RESET_SECRET, expiresIn: '15m' },
+        );
+
+        await this.prisma.passwordReset.update({
+            where: { id: passwordReset.id },
+            data: { usedAt: new Date() },
+        });
+
+        return { resetSessionId, role: 'customer' };
+    }
+
+    async resetPassword(email: string, newPassword: string) {
+        const customer = await this.prisma.customer.findUnique({ where: { email } });
+        if (!customer) return { message: 'Şifre güncellendi' };
+
+        const hashed = await bcrypt.hash(newPassword, 12);
+        await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+            password: hashed,
+            refreshToken: null,
+            },
+        });
+
+        return { message: 'Şifre güncellendi' };
     }
 }
