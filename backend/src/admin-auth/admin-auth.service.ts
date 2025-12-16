@@ -3,13 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-
+import { MailerService } from '@nestjs-modules/mailer';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class AdminAuthService {
     constructor(
         private prisma: PrismaService,
-        private jwt: JwtService
+        private jwt: JwtService,
+        private mailer: MailerService
     ) {}
 
     async login(dto: LoginDto)
@@ -186,5 +188,66 @@ export class AdminAuthService {
             phone: admin.phone,
             },
         };
+    }
+
+    async forgot(dto: { email: string }) {
+        const admin = await this.prisma.admin.findUnique({ where: { email: dto.email } });
+        if (!admin) return { message: 'Reset kodu gönderildi' };
+
+        const code = randomInt(0, 1_000_000).toString().padStart(6, '0')
+
+        const tokenHash = await bcrypt.hash(code, 12);
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        await this.prisma.passwordReset.create({
+            data: { email: dto.email, tokenHash: tokenHash, expiresAt },
+        });
+
+        await this.mailer.sendMail({
+            to: dto.email,
+            subject: 'Şifre sıfırlama kodu',
+            text: `Kodunuz: ${code} (30 dk geçerli)`,
+            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+        });
+
+        return { message: "Sıfırlama kodu e-posta ile gönderildi"}
+    }
+
+    async verifyReset(dto: { code: string }) {
+        const passwordReset = await this.prisma.passwordReset.findFirst({
+            where: { usedAt: null, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (!passwordReset) return { message: 'Sıfırlama kodu geçersiz' };
+
+        const ok = await bcrypt.compare(dto.code, passwordReset.tokenHash);
+        if (!ok) return { message: 'Sıfırlama kodu geçersiz' };
+
+        const resetSessionId = await this.jwt.signAsync(
+            { email: passwordReset.email, role: 'admin', purpose: 'password-reset' },
+            { secret: process.env.RESET_SECRET, expiresIn: '15m' },
+        );
+
+        await this.prisma.passwordReset.update({
+            where: { id: passwordReset.id },
+            data: { usedAt: new Date() },
+        });
+
+        return { resetSessionId, role: 'admin' };
+    }
+
+    async resetPassword(email: string, newPassword: string) {
+        const admin = await this.prisma.admin.findUnique({ where: { email } });
+        if (!admin) return { message: 'Şifre güncellendi' };
+
+        const hashed = await bcrypt.hash(newPassword, 12);
+        await this.prisma.admin.update({
+            where: { id: admin.id },
+            data: {
+            password: hashed,
+            refreshToken: null,
+            },
+        });
+
+        return { message: 'Şifre güncellendi' };
     }
 }

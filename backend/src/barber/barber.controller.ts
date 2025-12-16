@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { UpdateBarberDto } from './dto/update-barber.dto';
 
 @Controller('barber')
 export class BarberController {
@@ -55,10 +56,17 @@ export class BarberController {
     deleteImage(@Req() req: any) {
         return this.barberService.deleteImage(req.barber.sub);
     }
-
+    
+    @Put('update')
+    @UseGuards(JwtBarberGuard)
+    updateBarber(@Req() req: any, @Body() dto: UpdateBarberDto) {
+        return this.barberService.updateBarber(req.barber.sub, dto); 
+    }
+    
     @Put(':id')
     @UseGuards(JwtAdminGuard)
     isActive(@Req() req: any, @Param('id', ParseIntPipe) barberId: number, @Body() dto: ActivityBarberDto) {
         return this.barberService.update(req.admin!.sub, barberId, dto); 
     }
+
 }

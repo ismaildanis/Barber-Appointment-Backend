@@ -21,7 +21,7 @@ model Customer {
   email        String        @unique
   firstName    String
   lastName     String
-  phone        String
+  phone        String        @unique
   password     String
   refreshToken String?
   createdAt    DateTime      @default(now())
@@ -35,7 +35,7 @@ model Barber {
   email        String        @unique
   firstName    String
   lastName     String
-  phone        String
+  phone        String        @unique
   password     String
   active       Boolean       @default(true)
   image        String?
@@ -53,7 +53,7 @@ model Admin {
   email        String    @unique
   firstName    String
   lastName     String
-  phone        String
+  phone        String    @unique
   password     String
   refreshToken String?
   createdAt    DateTime  @default(now())
@@ -142,4 +142,18 @@ model HolidayDate {
   date        DateTime @unique
   reason      String
   createdAt   DateTime @default(now())
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String?
+  phone     String?
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([expiresAt])
 }
