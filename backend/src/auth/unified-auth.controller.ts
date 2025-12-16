@@ -70,7 +70,7 @@ export class UnifiedAuthController {
   }
   
   @Post('verify-reset')
-  async verifyReset(@Body() dto: { email: string; code: string }) {
+  async verifyReset(@Body() dto: { code: string }) {
     const r =
       (await this.customerAuth.verifyReset(dto)) ||
       (await this.barberAuth.verifyReset(dto)) ||

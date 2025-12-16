@@ -212,26 +212,18 @@ export class BarberAuthService {
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
     
-     async verifyReset(dto: { email: string; code: string }) {
+    async verifyReset(dto: { code: string }) {
         const passwordReset = await this.prisma.passwordReset.findFirst({
-            where: {
-            email: dto.email,
-            usedAt: null,
-            expiresAt: { gt: new Date() },
-            },
+            where: { usedAt: null, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: 'desc' },
         });
-        if (!passwordReset) {
-            return { message: 'Sıfırlama kodu geçersiz' };
-        }
+        if (!passwordReset) return { message: 'Sıfırlama kodu geçersiz' };
 
         const ok = await bcrypt.compare(dto.code, passwordReset.tokenHash);
-        if (!ok) {
-            return { message: 'Sıfırlama kodu geçersiz' };
-        }
+        if (!ok) return { message: 'Sıfırlama kodu geçersiz' };
 
         const resetSessionId = await this.jwt.signAsync(
-            { email: dto.email, role: 'barber', purpose: 'password-reset' },
+            { email: passwordReset.email, role: 'barber', purpose: 'password-reset' },
             { secret: process.env.RESET_SECRET, expiresIn: '15m' },
         );
 

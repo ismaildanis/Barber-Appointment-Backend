@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ActivityBarberDto } from './dto/activity-barber.dto';
 import { ConfigService } from '@nestjs/config';
+import { UpdateBarberDto } from './dto/update-barber.dto';
 
 
 @Injectable()
@@ -132,6 +133,25 @@ export class BarberService {
             await this.prisma.barber.update({
                 data: {
                     active: dto.active  
+                },
+                where: {
+                    id: barberId
+                }
+            })
+            return { message: "Başarılı" }
+        } catch (error) {
+            throw new Error(error)
+        }
+    }
+
+    async updateBarber(barberId: number, dto: UpdateBarberDto) {
+        const barber = await this.prisma.barber.findUnique({ where: {id: barberId, deletedAt: null } })
+        console.log(barber);
+        if (!barber) {throw new NotFoundException("Berber bulunamadı")}
+        try {
+            await this.prisma.barber.update({
+                data: {
+                    ...dto 
                 },
                 where: {
                     id: barberId
