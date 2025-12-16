@@ -18,15 +18,13 @@ export class AuthService
 
     async register(dto: RegisterDto)
     {
-        const existing = await this.prisma.customer.findUnique({
-            where: {
-                email: dto.email,
-            }
-        });
+        const email = dto.email;    
+        const exists =
+            (await this.prisma.customer.findUnique({ where: { email } })) ||
+            (await this.prisma.barber.findUnique({ where: { email } })) ||
+            (await this.prisma.admin.findUnique({ where: { email } }));
 
-        if(existing){
-            throw new ConflictException("Email zaten bulunuyor")
-        }
+        if (exists) throw new ConflictException('Bu email kullanılıyor başka bir email deneyin.');
 
         const hashedPassword =  await bcrypt.hash(dto.password, 12)
 

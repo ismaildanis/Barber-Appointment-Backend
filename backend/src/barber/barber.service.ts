@@ -13,6 +13,7 @@ export class BarberService {
     constructor(private prisma: PrismaService, private config: ConfigService) {}
 
     async create(dto: CreateBarberDto, adminId: number) {
+
         const admin = await this.prisma.admin.findUnique({
             where: {
                 id: adminId
@@ -20,6 +21,16 @@ export class BarberService {
         })
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
+
+          const email = dto.email;
+
+        const exists =
+            (await this.prisma.customer.findUnique({ where: { email } })) ||
+            (await this.prisma.barber.findUnique({ where: { email } })) ||
+            (await this.prisma.admin.findUnique({ where: { email } }));
+
+        if (exists) throw new ConflictException('Bu email kullanılıyor başka bir email deneyin.');
+        
         const hashedPassword =  await bcrypt.hash(dto.password, 12)
         
         try {
