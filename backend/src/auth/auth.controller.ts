@@ -4,21 +4,22 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { Throttle } from '@nestjs/throttler';
  
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) {}
-    @Get("test")
-    test() {
-        return { message: "Backend çalışıyor 🚀" };
-    }
+
+    
     @Post('register')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     register(@Body() dto: RegisterDto) 
     {
         return this.authService.register(dto);
     }
 
     @Post('login')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     async login(@Body() dto: LoginDto) {
         const result = await this.authService.login(dto);
 

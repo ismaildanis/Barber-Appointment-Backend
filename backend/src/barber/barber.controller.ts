@@ -7,7 +7,6 @@ import { ActivityBarberDto } from './dto/activity-barber.dto';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import { UpdateBarberDto } from './dto/update-barber.dto';
 
 @Controller('barber')

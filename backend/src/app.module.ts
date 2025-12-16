@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppointmentModule } from './appointment/appointment.module';
 import { ServiceModule } from './service/service.module';
 import { BarberController } from './barber/barber.controller';
@@ -20,6 +20,7 @@ import { ConfigModule } from '@nestjs/config';
 import { WorkingHourController } from './working-hour/working-hour.controller';
 import { WorkingHourModule } from './working-hour/working-hour.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -56,6 +57,10 @@ import { MailerModule } from '@nestjs-modules/mailer';
     HolidayModule,
   ],
   controllers: [AppController, BarberController, BarberAuthController, WorkingHourController],
-  providers: [AppService, BarberAuthService],
+  providers: [
+    AppService, 
+    BarberAuthService,
+    {provide: APP_GUARD, useClass: ThrottlerGuard},
+  ],
 })
 export class AppModule {}

@@ -8,6 +8,8 @@ import { JwtUnifiedRefreshGuard } from './guards/jwt-unified-refresh.guard';
 import { ForgotDto } from './dto/forgot.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtService } from '@nestjs/jwt';
+import { Throttle } from '@nestjs/throttler';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('unified-auth')
 export class UnifiedAuthController {
@@ -19,6 +21,7 @@ export class UnifiedAuthController {
   ) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   async login(@Body() dto: LoginDto) {
     const customer = await this.customerAuth.tryLogin(dto);
     if (customer) return customer;
@@ -60,6 +63,7 @@ export class UnifiedAuthController {
   }
 
   @Post('forgot')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   async forgot(@Body() dto: ForgotDto) {
     await Promise.all([
       this.customerAuth.forgot(dto),
@@ -70,6 +74,7 @@ export class UnifiedAuthController {
   }
   
   @Post('verify-reset')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   async verifyReset(@Body() dto: { code: string }) {
     const r =
       (await this.customerAuth.verifyReset(dto)) ||
@@ -80,6 +85,7 @@ export class UnifiedAuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   async resetPassword(@Body() dto: { resetSessionId: string; newPassword: string }) {
     let payload: any;
     try {
@@ -94,6 +100,15 @@ export class UnifiedAuthController {
     if (role === 'barber')   return this.barberAuth.resetPassword(payload.email, dto.newPassword);
     if (role === 'admin')    return this.adminAuth.resetPassword(payload.email, dto.newPassword);
     throw new UnauthorizedException();
+  }
+
+  @Post('change-password')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
+  async changePassword(@Body() dto: ChangePasswordDto, @Req() req: any) {
+    const { sub, role } = req.user;
+    if (role === 'customer') return await this.customerAuth.changePassword(sub, dto);
+    if (role === 'barber')   return await this.barberAuth.changePassword(sub, dto);
+    if (role === 'admin')    return await this.adminAuth.changePassword(sub, dto);
   }
 }
 

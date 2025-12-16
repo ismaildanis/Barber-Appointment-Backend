@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailerService } from '@nestjs-modules/mailer';
 import { randomInt } from 'crypto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService 
@@ -275,6 +276,22 @@ export class AuthService
             password: hashed,
             refreshToken: null,
             },
+        });
+
+        return { message: 'Şifre güncellendi' };
+    }
+
+    async changePassword(customerId: number, dto: ChangePasswordDto) {
+        const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+        if (!customer) throw new UnauthorizedException('Admin bulunamadı');
+
+        const ok = await bcrypt.compare(dto.oldPassword, customer.password);
+        if (!ok) return { message: 'Şifre yanlış' };
+
+        const hashed = await bcrypt.hash(dto.newPassword, 12);
+        await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: { password: hashed, refreshToken: null },
         });
 
         return { message: 'Şifre güncellendi' };

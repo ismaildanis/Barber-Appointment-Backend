@@ -6,7 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { ActivityBarberDto } from './dto/activity-barber.dto';
 import { ConfigService } from '@nestjs/config';
 import { UpdateBarberDto } from './dto/update-barber.dto';
-
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class BarberService {
@@ -211,10 +212,24 @@ export class BarberService {
             throw new UnauthorizedException("Berber bulunamadı");
         }
 
+        const image = barber.image;
+
+        if (image && !image.includes('default-barber.png')) {
+            const filePath = path.resolve(process.cwd(), image);
+            if (fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (e) {
+                    console.warn('Dosya silinemedi:', e);
+                }
+            }
+        }
+
         await this.prisma.barber.update({
             where: { id: barberId, deletedAt: null },
             data: { image: null }
         });
+
 
         return { message: "Resim başarıyla silindi" };
     }
