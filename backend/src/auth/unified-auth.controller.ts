@@ -66,7 +66,7 @@ export class UnifiedAuthController {
       this.barberAuth.forgot(dto),
       this.adminAuth.forgot(dto),
     ]);
-    return { message: 'Eğer kayıtlıysanız e-posta gönderildi' };
+    return { message: 'Sıfırlama kodu e-posta ile gönderildi' };
   }
   
   @Post('verify-reset')
@@ -78,7 +78,7 @@ export class UnifiedAuthController {
     if (r?.resetSessionId) return r;
     return { message: 'Sıfırlama kodu geçersiz' };
   }
-  
+
   @Post('reset-password')
   async resetPassword(@Body() dto: { resetSessionId: string; newPassword: string }) {
     let payload: any;

@@ -226,19 +226,20 @@ export class AuthService
         const customer = await this.prisma.customer.findUnique({ where: { email: dto.email } });
         if (!customer) return { message: 'Reset kodu gönderildi' };
 
-        const code = randomInt(0, 1_000_000).toString().padStart(6, '0')
+        const code = randomInt(0, 1_000_000).toString().padStart(6, '0') 
 
         const tokenHash = await bcrypt.hash(code, 12);
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
         await this.prisma.passwordReset.create({
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
-          await this.mailer.sendMail({
+        const mail = await this.mailer.sendMail({
             to: dto.email,
             subject: 'Şifre sıfırlama kodu',
             text: `Kodunuz: ${code} (30 dk geçerli)`,
             html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
         });
+        console.log(mail);
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
 

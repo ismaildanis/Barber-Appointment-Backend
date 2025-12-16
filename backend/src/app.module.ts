@@ -16,7 +16,7 @@ import { BarberAuthService } from './barber-auth/barber-auth.service';
 import { BarberAuthModule } from './barber-auth/barber-auth.module';
 import { HolidayModule } from './holiday/holiday.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config'; 
 import { WorkingHourController } from './working-hour/working-hour.controller';
 import { WorkingHourModule } from './working-hour/working-hour.module';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -38,7 +38,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
           secure: false,
           auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
         },
-        defaults: { from: `"Destek" <${process.env.SMTP_USER}>` },
+        defaults: { from: `"Destek" <${process.env.VENDOR_NAME}>` },
       }),
 
     ThrottlerModule.forRoot([
