@@ -470,49 +470,80 @@ export class AppointmentService {
   }
 
   async addBreak(barberId: number, dto: BreakDto) {
-    const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
     if (!barber) throw new NotFoundException("Berber bulunamadı");
 
-    if (dto.endMin == dto.startMin || dto.startMin >= dto.endMin) throw new BadRequestException("Gecersiz saat aralığı");
+    if (dto.endMin <= dto.startMin) throw new BadRequestException("Geçersiz saat aralığı");
 
     const day = dayjs().tz("Europe/Istanbul");
     const work = await this.prisma.workingHour.findFirst({
-      where: { barberId, dayOfWeek: day.day() }
+      where: { barberId, dayOfWeek: day.day() },
     });
-
     if (!work) throw new NotFoundException("Bugün çalışma saati tanımlı değil");
-    if(work.startMin >= dto.startMin || work.endMin <= dto.endMin) throw new BadRequestException("Gecersiz saatt aralığı");
+
+    if (dto.startMin < work.startMin || dto.endMin > work.endMin) {
+      throw new BadRequestException("Geçersiz saat aralığı");
+    }
+
+    const dayStart = day.startOf("day").toDate();
+    const dayEnd = day.endOf("day").toDate();
+    const start = day.startOf("day").add(dto.startMin, "minute").toDate();
+    const end = day.startOf("day").add(dto.endMin, "minute").toDate();
+
     try {
-      await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const breakPeriod = await tx.breakPeriod.create({
           data: {
+            barberId,
             workingHourId: work.id,
             startMin: dto.startMin,
             endMin: dto.endMin,
-          }
+          },
         });
-      
-        const start = day.startOf("day").add(dto.startMin, "minute").toDate();
-        const end   = day.startOf("day").add(dto.endMin, "minute").toDate();
 
         await tx.appointment.updateMany({
           where: {
             barberId,
             status: Status.SCHEDULED,
-            appointmentStartAt: { lt: end },
-            appointmentEndAt: { gt: start }
+            appointmentStartAt: { lt: end, gte: dayStart },
+            appointmentEndAt: { gt: start, lte: dayEnd },
           },
           data: {
             status: Status.BARBER_CANCELLED,
             cancelReason: "Berber mola verdi",
-            cancelledAt: new Date()
-          }
+            cancelledAt: new Date(),
+          },
         });
+
         return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
-      })
+      });
     } catch (error) {
       throw this.handleWorkinHourError(error);
     }
+  }
+
+  async deleteBreak(barberId: number, id: number) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
+    if (!barber) throw new NotFoundException("Berber bulunamadı");
+    const breakPeriod = await this.prisma.breakPeriod.findUnique({ where: { id, barberId: barberId } });
+    if (!breakPeriod) throw new NotFoundException("Mola bulunamadı");
+    try {
+      await this.prisma.breakPeriod.delete({ where: { id: id, barberId: barberId } });
+      return { message: "Mola silindi" };
+    } catch (error) {
+      throw Error(error);
+    }
+  }
+
+  async getBreaks(barberId: number) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId }});
+    if (!barber) throw new NotFoundException("Berber bulunamadı");
+    const breakPeriod = await this.prisma.breakPeriod.findMany({ 
+      where: { barberId: barberId }, 
+      include: { workingHour: true }
+    });
+    if (breakPeriod.length === 0) return [];
+    return breakPeriod
   }
 
   private handleUniqueError(e: unknown): never {

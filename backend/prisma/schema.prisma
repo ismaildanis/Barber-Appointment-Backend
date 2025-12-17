@@ -44,6 +44,7 @@ model Barber {
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
 
+  breaks        BreakPeriod[]
   appointments Appointment[]
   workingHours  WorkingHour[]
 }
@@ -129,10 +130,12 @@ model WorkingHour {
 
 model BreakPeriod {
   id         Int  @id @default(autoincrement())
+  barberId   Int
   workingHourId Int
   startMin   Int
   endMin     Int
 
+  barber Barber @relation(fields: [barberId], references: [id])
   workingHour WorkingHour @relation(fields: [workingHourId], references: [id])
   @@unique([workingHourId, startMin, endMin])
 }
