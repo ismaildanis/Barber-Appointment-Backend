@@ -213,9 +213,9 @@ export class AdminAuthService {
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
 
-    async verifyReset(dto: { code: string }) {
+    async verifyReset(dto: { email: string; code: string }) {
         const passwordReset = await this.prisma.passwordReset.findFirst({
-            where: { usedAt: null, expiresAt: { gt: new Date() } },
+            where: { email: dto.email, usedAt: null, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: 'desc' },
         });
         if (!passwordReset) return { message: 'Sıfırlama kodu geçersiz' };
@@ -224,7 +224,7 @@ export class AdminAuthService {
         if (!ok) return { message: 'Sıfırlama kodu geçersiz' };
 
         const resetSessionId = await this.jwt.signAsync(
-            { email: passwordReset.email, role: 'admin', purpose: 'password-reset' },
+            { email: dto.email, role: 'admin', purpose: 'password-reset' },
             { secret: process.env.RESET_SECRET, expiresIn: '15m' },
         );
 

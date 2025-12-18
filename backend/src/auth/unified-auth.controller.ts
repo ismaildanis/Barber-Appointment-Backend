@@ -75,7 +75,7 @@ export class UnifiedAuthController {
   
   @Post('verify-reset')
   @Throttle({ default: { limit: 5, ttl: 60 } })
-  async verifyReset(@Body() dto: { code: string }) {
+  async verifyReset(@Body() dto: { email: string; code: string }) {
     const r =
       (await this.customerAuth.verifyReset(dto)) ||
       (await this.barberAuth.verifyReset(dto)) ||
@@ -101,7 +101,7 @@ export class UnifiedAuthController {
     if (role === 'admin')    return this.adminAuth.resetPassword(payload.email, dto.newPassword);
     throw new UnauthorizedException();
   }
-
+  @UseGuards(JwtUnifiedGuard)
   @Post('change-password')
   @Throttle({ default: { limit: 5, ttl: 60 } })
   async changePassword(@Body() dto: ChangePasswordDto, @Req() req: any) {
