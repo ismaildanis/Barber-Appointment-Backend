@@ -213,9 +213,9 @@ export class BarberAuthService {
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
     
-    async verifyReset(dto: { code: string }) {
+    async verifyReset(dto: {  email: string; code: string }) {
         const passwordReset = await this.prisma.passwordReset.findFirst({
-            where: { usedAt: null, expiresAt: { gt: new Date() } },
+            where: { email: dto.email, usedAt: null, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: 'desc' },
         });
         if (!passwordReset) return { message: 'Sıfırlama kodu geçersiz' };
@@ -224,7 +224,7 @@ export class BarberAuthService {
         if (!ok) return { message: 'Sıfırlama kodu geçersiz' };
 
         const resetSessionId = await this.jwt.signAsync(
-            { email: passwordReset.email, role: 'barber', purpose: 'password-reset' },
+            { email: dto.email, role: 'barber', purpose: 'password-reset' },
             { secret: process.env.RESET_SECRET, expiresIn: '15m' },
         );
 
@@ -254,10 +254,10 @@ export class BarberAuthService {
 
     async changePassword(barberId: number, dto: ChangePasswordDto) {
         const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
-        if (!barber) throw new UnauthorizedException('Admin bulunamadı');
-
+        if (!barber) throw new UnauthorizedException('Berber bulunamadı');
+        console.log(barber);    
         const ok = await bcrypt.compare(dto.oldPassword, barber.password);
-        if (!ok) return { message: 'Şifre yanlış' };
+        if (!ok) throw new UnauthorizedException('Şifre yanlış');
 
         const hashed = await bcrypt.hash(dto.newPassword, 12);
         await this.prisma.barber.update({

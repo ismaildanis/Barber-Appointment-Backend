@@ -8,6 +8,7 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourValidator } from './validators/working-hours.validator';
 import { WorkingHourService } from './working-hour.service';
 import { AppointmentCron } from './cron/appointment.cron';
+import { BarberBreakCron } from './cron/barber-break.cron';
 
 @Module({
   controllers: [AppointmentController],
@@ -19,7 +20,8 @@ import { AppointmentCron } from './cron/appointment.cron';
     ConflictValidator, 
     TimeRangeValidator, 
     WorkingHourValidator,
-    AppointmentCron
+    AppointmentCron,
+    BarberBreakCron
   ],
   exports: [AppointmentService]
 })

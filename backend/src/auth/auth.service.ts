@@ -238,22 +238,22 @@ export class AuthService
             text: `Kodunuz: ${code} (30 dk geçerli)`,
             html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
         });
-        console.log(mail);
+
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
 
-    async verifyReset(dto: { code: string }) {
+    async verifyReset(dto: { email: string; code: string }) {
         const passwordReset = await this.prisma.passwordReset.findFirst({
-            where: { usedAt: null, expiresAt: { gt: new Date() } },
+            where: { email: dto.email, usedAt: null, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: 'desc' },
         });
-        if (!passwordReset) return { message: 'Sıfırlama kodu geçersiz' };
+        if (!passwordReset) throw new UnauthorizedException('Sıfırlama kodu geçersiz');
 
         const ok = await bcrypt.compare(dto.code, passwordReset.tokenHash);
-        if (!ok) return { message: 'Sıfırlama kodu geçersiz' };
+        if (!ok) throw new UnauthorizedException('Sıfırlama kodu yanlış');
 
         const resetSessionId = await this.jwt.signAsync(
-            { email: passwordReset.email, role: 'customer', purpose: 'password-reset' },
+            { email: dto.email, role: 'customer', purpose: 'password-reset' },
             { secret: process.env.RESET_SECRET, expiresIn: '15m' },
         );
 
@@ -283,10 +283,10 @@ export class AuthService
 
     async changePassword(customerId: number, dto: ChangePasswordDto) {
         const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-        if (!customer) throw new UnauthorizedException('Admin bulunamadı');
+        if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
 
         const ok = await bcrypt.compare(dto.oldPassword, customer.password);
-        if (!ok) return { message: 'Şifre yanlış' };
+        if (!ok) throw new UnauthorizedException('Şifre yanlış. Tekrar Deneyiniz');
 
         const hashed = await bcrypt.hash(dto.newPassword, 12);
         await this.prisma.customer.update({

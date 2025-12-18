@@ -38,6 +38,11 @@ export class AppointmentController
     {
         return this.appointmentService.findForBarber(req.user!.sub, date) 
     }
+    @Get('barber-break')
+    @UseGuards(JwtBarberGuard)
+    getBreaks(@Req() req: any) {
+        return this.appointmentService.getBreaks(req.user.sub);
+    }
 
     @Get('barber/today')
     @UseGuards(JwtBarberGuard)
@@ -146,15 +151,18 @@ export class AppointmentController
     @Req() req: any,
     @Body() dto: BarberCancelDto
     ) {
-    return this.appointmentService.cancelByBarber(req.barber.sub, id, dto);
+        return this.appointmentService.cancelByBarber(req.barber.sub, id, dto);
     }
 
     @Post('barber-break')
     @UseGuards(JwtBarberGuard)
     addBreak(@Req() req: any, @Body() dto: BreakDto) {
-    return this.appointmentService.addBreak(req.user.sub, dto);
+        return this.appointmentService.addBreak(req.user.sub, dto);
     }
 
-
-
+    @Delete('barber-break/:id')
+    @UseGuards(JwtBarberGuard)
+    deleteBreak(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+        return this.appointmentService.deleteBreak(req.user.sub, id);
+    }
 }
