@@ -110,5 +110,15 @@ export class UnifiedAuthController {
     if (role === 'barber')   return await this.barberAuth.changePassword(sub, dto);
     if (role === 'admin')    return await this.adminAuth.changePassword(sub, dto);
   }
+
+  @Post('push/register')
+  @UseGuards(JwtUnifiedGuard)
+  async pushRegister(@Body() dto: { token: string }, @Req() req: any) {
+    console.log('push register user', req.user);
+    const { sub, role } = req.user;
+    if (role === 'customer') return await this.customerAuth.pushRegister(sub, dto);
+    if (role === 'barber')   return await this.barberAuth.pushRegister(sub, dto);
+    if (role === 'admin')    return await this.adminAuth.pushRegister(sub, dto);
+  }
 }
 
