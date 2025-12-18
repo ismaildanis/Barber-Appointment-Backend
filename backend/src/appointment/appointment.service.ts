@@ -10,8 +10,10 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
-
+import { Expo } from 'expo-server-sdk';
+const expo = new Expo();
 import dayjs = require('dayjs');
+import { PushService } from './push-notifications.service';
 @Injectable()
 export class AppointmentService {
   constructor(
@@ -20,7 +22,8 @@ export class AppointmentService {
       private conflict: ConflictValidator,
       private work: WorkingHourValidator,
       private timeRange: TimeRangeValidator,
-      private workinHours: WorkingHourService
+      private workinHours: WorkingHourService,
+      private push: PushService
   ) {}
 
 
@@ -206,7 +209,6 @@ export class AppointmentService {
     const apptStartAt = dayjs(dto.appointmentStartAt);
     const apptEndAt = apptStartAt.add(totalDuration, "minute");
 
-    console.log(apptStartAt, apptEndAt);
     await this.work.workingValidate(dto, apptStartAt, apptEndAt);
 
     const hasConflict = await this.conflict.conflictValidate(dto, apptStartAt, apptEndAt);
@@ -215,18 +217,21 @@ export class AppointmentService {
     }
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const appt = await tx.appointment.create({
+      let appt;
+      await this.prisma.$transaction(async (tx) => {
+        appt = await tx.appointment.create({
           data: { barberId: dto.barberId, customerId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate(), notes: dto.notes },
         });
         await tx.appointmentService.createMany({
-          data: dto.serviceIds.map((id: number) => ({
-            appointmentId: appt.id,
-            serviceId: id,
-          }))
-        })
-        return appt;
+          data: dto.serviceIds.map((id: number) => ({ appointmentId: appt.id, serviceId: id })),
+        });
       });
+
+      const startStr = apptStartAt.format("HH:mm");
+      await this.push.notify(customerId, 'customer', 'Randevu oluşturuldu', `${startStr} için randevunuz alındı`, { appointmentId: appt.id });
+      await this.push.notify(dto.barberId, 'barber', 'Yeni randevu', `Yeni randevu: ${startStr}`, { appointmentId: appt.id });
+
+      return appt;
     } catch (e) {
       this.handleUniqueError(e);
     }
@@ -569,6 +574,14 @@ export class AppointmentService {
     
     }
     throw e;
+  }
+
+  async notify(userId: number, role: string, title: string, body: string, data?: any) {
+    const tokens = (await this.prisma.pushToken.findMany({ where: { userId, role } })).map(t => t.token);
+    if (!tokens.length) return;
+    const messages = tokens.map(t => ({ to: t, sound: 'default', title, body, data }));
+    const chunks = expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
   }
 
 }

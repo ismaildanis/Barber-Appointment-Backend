@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -6,6 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { MailerService } from '@nestjs-modules/mailer';
 import { randomInt } from 'crypto';
 import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
+import { Expo } from 'expo-server-sdk';
+const expo = new Expo();
 
 @Injectable()
 export class AdminAuthService {
@@ -266,5 +268,18 @@ export class AdminAuthService {
         });
 
         return { message: 'Şifre güncellendi' };
+    }
+
+    async pushRegister(adminId: number, dto: { token: string }) {
+        const token = dto.token;
+        if (!Expo.isExpoPushToken(token)) throw new BadRequestException('Geçersiz anahtar');
+
+        await this.prisma.pushToken.upsert({
+            where: { token },
+            update: { userId: adminId, role: 'admin', updatedAt: new Date() },
+            create: { userId: adminId, role: 'admin', token },
+        });
+
+        return { ok: true };
     }
 }
