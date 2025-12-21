@@ -158,7 +158,6 @@ export class BarberService {
 
     async updateBarber(barberId: number, dto: UpdateBarberDto) {
         const barber = await this.prisma.barber.findUnique({ where: {id: barberId, deletedAt: null } })
-        console.log(barber);
         if (!barber) {throw new NotFoundException("Berber bulunamadı")}
         try {
             await this.prisma.barber.update({
