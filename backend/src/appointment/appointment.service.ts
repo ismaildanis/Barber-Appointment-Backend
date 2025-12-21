@@ -16,6 +16,7 @@ import dayjs = require('dayjs');
 import { PushService } from './push-notifications.service';
 @Injectable()
 export class AppointmentService {
+
   constructor(
       private prisma: PrismaService,
       private dateRangeService: DateRangeService,
@@ -227,9 +228,10 @@ export class AppointmentService {
         });
       });
 
-      const startStr = apptStartAt.format("HH:mm");
-      await this.push.notify(customerId, 'customer', 'Randevu oluşturuldu', `${startStr} için randevunuz alındı`, { appointmentId: appt.id });
-      await this.push.notify(dto.barberId, 'barber', 'Yeni randevu', `Yeni randevu: ${startStr}`, { appointmentId: appt.id });
+      const startStr = apptStartAt.format("MM-DD HH:mm");
+      const weekDay = apptStartAt.toDate().toLocaleDateString('tr-TR', { weekday: 'long' });
+      await this.push.notify(customerId, 'customer', 'Randevu oluşturuldu', `${startStr}-${weekDay} tarihinde ${barber.firstName} ${barber.lastName} için randevunuz alındı`);
+      await this.push.notify(dto.barberId, 'barber', 'Yeni bir randevunuz var', `${customer.firstName} ${customer.lastName} tarafından ${startStr}-${weekDay} tarihinde randevu aldı`);
 
       return appt;
     } catch (e) {
@@ -357,7 +359,7 @@ export class AppointmentService {
           ...(date ? { gte: start, lt: end} : {}),
         },
       },
-      orderBy: { appointmentStartAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       
       include: { 
         appointmentServices: {
@@ -422,6 +424,21 @@ export class AppointmentService {
     
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {cancelReason: dto.cancelReason, status: "CANCELLED", cancelledAt: new Date() }})
+      const barber = await this.prisma.barber.findUnique({ where: { id: markAppointment.barberId } });
+      const apptStartAt = dayjs(markAppointment.appointmentStartAt);
+      const startStr = apptStartAt.format("MM-DD HH:mm");
+      const weekDay = apptStartAt.toDate().toLocaleDateString('tr-TR', { weekday: 'long' });
+
+      const reason = dto.cancelReason?.trim();
+      const base = `${startStr} - ${weekDay} tarihinde aldığınız berber ${barber?.firstName} ${barber?.lastName} için randevunuz iptal edildi.`;
+      const body = reason ? `${base} Sebep: ${reason}.` : base;
+
+      await this.push.notify(
+        markAppointment.customerId,
+        'customer',
+        'Randevunuz iptal edildi',
+        body
+      );
       return {message: "Randevu iptal edildi olarak işaretlendi"}
     } catch (error) {
       throw new Error(error)
@@ -470,7 +487,22 @@ export class AppointmentService {
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     if (appt.status != 'SCHEDULED') throw new BadRequestException('Randevu iptal edilemez');
-    await this.prisma.appointment.update({ where: { id: appointmentId }, data: { status: dto.status, cancelReason: dto.cancelReason, cancelledAt: new Date() } });
+    await this.prisma.appointment.update({ where: { id: appointmentId }, data: { status: "BARBER_CANCELLED", cancelReason: dto.cancelReason, cancelledAt: new Date() } });
+
+    const apptStartAt = dayjs(appt.appointmentStartAt);
+    const startStr = apptStartAt.format("MM-DD HH:mm");
+    const weekDay = apptStartAt.toDate().toLocaleDateString('tr-TR', { weekday: 'long' });
+
+    const reason = dto.cancelReason?.trim();
+    const base = `${startStr} - ${weekDay} tarihinde ${barber.firstName} ${barber.lastName} için randevunuz iptal edildi.`;
+    const body = reason ? `${base} Sebep: ${reason}.` : base;
+
+    await this.push.notify(
+      appt.customerId,
+      'customer',
+      'Randevunuz iptal edildi',
+      body
+    );
     return { message: 'Randevu iptal edildi' };
   }
 
@@ -574,14 +606,6 @@ export class AppointmentService {
     
     }
     throw e;
-  }
-
-  async notify(userId: number, role: string, title: string, body: string, data?: any) {
-    const tokens = (await this.prisma.pushToken.findMany({ where: { userId, role } })).map(t => t.token);
-    if (!tokens.length) return;
-    const messages = tokens.map(t => ({ to: t, sound: 'default', title, body, data }));
-    const chunks = expo.chunkPushNotifications(messages);
-    for (const chunk of chunks) await expo.sendPushNotificationsAsync(chunk);
   }
 
 }

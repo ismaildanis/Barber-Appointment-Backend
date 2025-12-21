@@ -257,7 +257,6 @@ export class BarberAuthService {
     async changePassword(barberId: number, dto: ChangePasswordDto) {
         const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
         if (!barber) throw new UnauthorizedException('Berber bulunamadı');
-        console.log(barber);    
         const ok = await bcrypt.compare(dto.oldPassword, barber.password);
         if (!ok) throw new UnauthorizedException('Şifre yanlış');
 
