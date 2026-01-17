@@ -335,7 +335,7 @@ export class AppointmentService {
           }
         },
         customer: {
-          select: { id: true, firstName: true, lastName: true }
+          select: { id: true, firstName: true, lastName: true, phone: true, email: true }
         }
       },
     });
@@ -474,6 +474,25 @@ export class AppointmentService {
     try {
       await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "NO_SHOW"}})
       return {message: "Randevuya gelinmedi olarak işaretlendi"}
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+
+  async markCompletedForBarber(barberId: number, appointmentId: number) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
+    if (!barber) throw new UnauthorizedException('Berber bulunamadı');
+
+    const appt = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId, barberId },
+    });
+
+    if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    if (appt.status == "COMPLETED") {throw new BadRequestException("Bu randevu zaten tamamlandı")}
+    if (appt.status != "SCHEDULED" && appt.status != "EXPIRED") {throw new BadRequestException("Bu randevu iptal edildi olarak işaretlenemez")}
+    try {
+      await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "COMPLETED"}})
+      return {message: "Randevu onaylandı olarak işaretlendi"}
     } catch (error) {
       throw new Error(error)
     }

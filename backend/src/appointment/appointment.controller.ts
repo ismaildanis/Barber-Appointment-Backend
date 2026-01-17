@@ -132,8 +132,8 @@ export class AppointmentController
     markCancel(@Param('id', ParseIntPipe) id: number, @Body() dto: MarkAppointmentDto , @Req() req: any){
         return this.appointmentService.markCancel(req.admin!.sub, id, dto)
     }
-    @Post('mark-completed/:id')
-    
+
+    @Post('mark-completed/:id')   
     @UseGuards(JwtAdminGuard)
     markCompleted(@Param('id', ParseIntPipe) id: number, @Req() req: any){
         return this.appointmentService.markCompleted(req.admin.sub, id)
@@ -142,6 +142,12 @@ export class AppointmentController
     @UseGuards(JwtAdminGuard)
     markNoShow(@Param('id', ParseIntPipe) id: number, @Req() req: any){
         return this.appointmentService.markNoShow(req.user.sub, id)
+    }
+
+    @Post('barber-mark-completed/:id')   
+    @UseGuards(JwtBarberGuard)
+    markCompletedForBarber(@Param('id', ParseIntPipe) id: number, @Req() req: any){
+        return this.appointmentService.markCompletedForBarber(req.barber.sub, id)
     }
 
     @Post('barber-cancel/:id')
