@@ -9,6 +9,7 @@ import { MarkAppointmentDto } from './dto/mark-appointment.dto';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
 import { Status } from '@prisma/client';
+import { AppointmentRange } from './enum/appointment-range.enum';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -18,9 +19,14 @@ export class AppointmentController
     @Get()
     @UseGuards(JwtAuthGuard)
 
-    index(@Req() req: any)
+    index(
+        @Query('range') range: AppointmentRange,
+        @Query('from') from: string,
+        @Query('to') to: string,
+        @Req() req: any
+    )
     {
-        return this.appointmentService.findAll(req.customer!.sub)
+        return this.appointmentService.findAll(req.customer!.sub, range, from, to);
     }
 
     @Get('/admin')

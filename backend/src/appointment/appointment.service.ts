@@ -10,10 +10,17 @@ import { TimeRangeValidator } from './validators/time-range.validator';
 import { WorkingHourService } from './working-hour.service';
 import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
+import { PushService } from './push-notifications.service';
+import { AppointmentRange } from './enum/appointment-range.enum';
 import { Expo } from 'expo-server-sdk';
 const expo = new Expo();
 import dayjs = require('dayjs');
-import { PushService } from './push-notifications.service';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 @Injectable()
 export class AppointmentService {
 
@@ -71,17 +78,61 @@ export class AppointmentService {
         },
         customer: {
           select: { id: true, firstName: true, lastName: true, phone: true, email: true }
-        }
+        } 
       }
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     return appt;
   }
-  async findAll(customerId: number) {
+  async findAll(customerId: number, range: AppointmentRange, from?: string, to?: string) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
+
+    let dateFilter: any = {}
+    
+    switch(range) {
+      case AppointmentRange.TODAY:
+        dateFilter = { gte: dayjs().startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_7_DAYS:
+        dateFilter = { gte: dayjs().subtract(7, 'day').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_1_MONTH:
+        dateFilter = { gte: dayjs().subtract(1, 'month').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_3_MONTHS:
+        dateFilter = { gte: dayjs().subtract(3, 'month').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_1_YEAR:
+        dateFilter = { gte: dayjs().subtract(1, 'year').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_3_YEARS:
+        dateFilter = { gte: dayjs().subtract(3, 'year').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_5_YEARS:
+        dateFilter = { gte: dayjs().subtract(5, 'year').startOf('day').toDate() };
+        break;
+
+      case AppointmentRange.LAST_10_YEARS:
+        dateFilter = { gte: dayjs().subtract(10, 'year').startOf('day').toDate() };
+        break;
+
+      default:
+        throw new BadRequestException('Geçersiz tarih aralığı');
+    }
     return this.prisma.appointment.findMany({
-      where: { customerId },
+      where: { 
+        customerId,
+        ...(Object.keys(dateFilter).length && {
+          appointmentStartAt: dateFilter
+        })
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         barber: {
