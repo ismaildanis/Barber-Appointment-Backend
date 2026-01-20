@@ -8,4 +8,5 @@ export enum AppointmentRange {
   LAST_3_YEARS = 'last_3_years',
   LAST_5_YEARS = 'last_5_years',
   LAST_10_YEARS = 'last_10_years',
+  PLUS_10_YEARS = 'plus_10_years',
 }
