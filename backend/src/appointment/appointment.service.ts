@@ -35,30 +35,40 @@ export class AppointmentService {
   ) {}
 
 
-  async indexAdmin(adminId: number, status: Status) {
-    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
-    if (!admin) throw new UnauthorizedException('Admin bulunamadı');
-    const appts =  await this.prisma.appointment.findMany({ 
-      where: { status },
-      orderBy: { createdAt: 'desc' }, 
-      include: { 
-        barber: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-        appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true, price: true, duration: true },
-            }
+  async indexAdmin(adminId: number, status: Status, date: string) {
+      const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
+      if (!admin) throw new UnauthorizedException('Admin bulunamadı');
+      
+      const startOfDay = dayjs(date).startOf('day').toDate();
+      const endOfDay = dayjs(date).endOf('day').toDate();
+      
+      const appts = await this.prisma.appointment.findMany({ 
+        where: { 
+          status, 
+          appointmentStartAt: {
+            gte: startOfDay,
+            lte: endOfDay
           }
         },
-        customer: {
-          select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+        orderBy: { createdAt: 'desc' },  
+        include: { 
+          barber: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          appointmentServices: {
+            include: {
+              service: {
+                select: { id: true, name: true, price: true, duration: true },
+              }
+            }
+          },
+          customer: {
+            select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+          }
         }
-      }
-    });
+      });
 
-    return appts;
+      return appts;
   }
   async findOneAdmin(appointmentId: number, adminId: number) {
     const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
@@ -84,7 +94,7 @@ export class AppointmentService {
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
     return appt;
   }
-  async findAll(customerId: number, range: AppointmentRange, from?: string, to?: string) {
+  async findAll(customerId: number, range: AppointmentRange) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
 
@@ -92,7 +102,7 @@ export class AppointmentService {
     
     switch(range) {
       case AppointmentRange.TODAY:
-        dateFilter = { gte: dayjs().startOf('day').toDate() };
+        dateFilter = { gte: dayjs().startOf('day').toDate(), lte : dayjs().endOf('day').toDate() };
         break;
 
       case AppointmentRange.LAST_7_DAYS:
@@ -123,9 +133,21 @@ export class AppointmentService {
         dateFilter = { gte: dayjs().subtract(10, 'year').startOf('day').toDate() };
         break;
 
+      case AppointmentRange.PLUS_10_YEARS: {
+        const tenYearsAgo = dayjs()
+          .subtract(10, 'year')
+          .startOf('day')
+          .toDate();
+
+        dateFilter = {
+          lte: tenYearsAgo,
+        };
+        break;
+      }
       default:
         throw new BadRequestException('Geçersiz tarih aralığı');
     }
+
     return this.prisma.appointment.findMany({
       where: { 
         customerId,

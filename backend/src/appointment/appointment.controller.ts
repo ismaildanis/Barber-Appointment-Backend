@@ -21,20 +21,18 @@ export class AppointmentController
 
     index(
         @Query('range') range: AppointmentRange,
-        @Query('from') from: string,
-        @Query('to') to: string,
         @Req() req: any
     )
     {
-        return this.appointmentService.findAll(req.customer!.sub, range, from, to);
+        return this.appointmentService.findAll(req.customer!.sub, range);
     }
 
     @Get('/admin')
     @UseGuards(JwtAdminGuard)
 
-    indexAdmin(@Query('status') status: Status, @Req() req: any)
+    indexAdmin(@Query('status') status: Status, @Query('date') date: string, @Req() req: any)
     {
-        return this.appointmentService.indexAdmin(req.user!.sub, status)
+        return this.appointmentService.indexAdmin(req.user!.sub, status, date)
     }
 
     @Get('barber')
