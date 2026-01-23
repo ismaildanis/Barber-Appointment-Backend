@@ -301,11 +301,25 @@ export class AppointmentService {
         });
       });
 
-      const startStr = apptStartAt.format("MM-DD HH:mm");
-      const weekDay = apptStartAt.toDate().toLocaleDateString('tr-TR', { weekday: 'long' });
-      await this.push.notify(customerId, 'customer', 'Randevu oluşturuldu', `${startStr}-${weekDay} tarihinde ${barber.firstName} ${barber.lastName} için randevunuz alındı`);
-      await this.push.notify(dto.barberId, 'barber', 'Yeni bir randevunuz var', `${customer.firstName} ${customer.lastName} tarafından ${startStr}-${weekDay} tarihinde randevu aldı`);
+      const dateStr = apptStartAt.toDate().toLocaleDateString('tr-TR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+      });
 
+      const timeStr = apptStartAt.format("HH:mm");
+      await this.push.notify(
+        customerId,
+        'customer',
+        'Randevu oluşturuldu',
+        `${dateStr} saat ${timeStr} için ${barber.firstName} ${barber.lastName} ile randevunuz oluşturuldu.`
+      );
+      await this.push.notify(
+        dto.barberId,
+        'barber',
+        'Yeni bir randevunuz var',
+        `${customer.firstName} ${customer.lastName}, ${dateStr} saat ${timeStr} için randevu oluşturdu.`
+      );
       return appt;
     } catch (e) {
       this.handleUniqueError(e);
@@ -361,6 +375,19 @@ export class AppointmentService {
         status: 'CANCELLED'
       }
     });
+    const apptStartAt = dayjs(result.appointmentStartAt);
+    const dateStr = apptStartAt.toDate().toLocaleDateString('tr-TR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+      });
+
+    const timeStr = apptStartAt.format("HH:mm");
+    await this.push.notify(
+      customerId, 
+      'customer', 
+      'Randevunuz iptal edildi', 
+      `${dateStr} saat ${timeStr} tarihli randevunuz iptal edildi.`);
     return { message: 'Randevu iptal edildi', result};
   }
 
@@ -604,7 +631,7 @@ export class AppointmentService {
 
     if (dto.endMin <= dto.startMin) throw new BadRequestException("Geçersiz saat aralığı");
 
-    const day = dayjs().tz("Europe/Istanbul");
+    const day = dayjs();
     const work = await this.prisma.workingHour.findFirst({
       where: { barberId, dayOfWeek: day.day() },
     });
@@ -614,8 +641,6 @@ export class AppointmentService {
       throw new BadRequestException("Geçersiz saat aralığı");
     }
 
-    const dayStart = day.startOf("day").toDate();
-    const dayEnd = day.endOf("day").toDate();
     const start = day.startOf("day").add(dto.startMin, "minute").toDate();
     const end = day.startOf("day").add(dto.endMin, "minute").toDate();
 
@@ -630,12 +655,19 @@ export class AppointmentService {
           },
         });
 
-        await tx.appointment.updateMany({
+        const cancelledAppts = await tx.appointment.findMany({
           where: {
             barberId,
             status: Status.SCHEDULED,
-            appointmentStartAt: { lt: end, gte: dayStart },
-            appointmentEndAt: { gt: start, lte: dayEnd },
+            appointmentStartAt: { lt: end },
+            appointmentEndAt: { gt: start },
+          },
+          select: { id: true, customerId: true },
+        });
+
+        await tx.appointment.updateMany({
+          where: {
+            id: { in: cancelledAppts.map(a => a.id) },
           },
           data: {
             status: Status.BARBER_CANCELLED,
@@ -644,6 +676,15 @@ export class AppointmentService {
           },
         });
 
+        for (const appt of cancelledAppts) {
+          await this.push.notify(
+            appt.customerId,
+            'customer',
+            'Randevunuz iptal edildi',
+            'Berber mola verdiği için randevunuz iptal edildi.'
+          );
+        }
+          
         return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };
       });
     } catch (error) {

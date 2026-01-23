@@ -2,9 +2,13 @@ import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/co
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateHolidayDto } from './dto/create-holiday.dto';
 import dayjs = require('dayjs');
+import { PushService } from 'src/appointment/push-notifications.service';
 @Injectable()
 export class HolidayService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,       
+    private push: PushService
+  ) {}
 
   async create(adminId: number, dto: CreateHolidayDto) {
     const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
@@ -27,16 +31,31 @@ export class HolidayService {
       });
       const startDay = dayjs(result.date).startOf('day').toDate();
       const endDay = dayjs(result.date).endOf('day').toDate(); 
-
-      const res = await this.prisma.appointment.updateMany({
+      const dateStr = dateOnly.toLocaleDateString('tr-TR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+      });
+      const res = await this.prisma.appointment.findMany({
         where: {
           appointmentStartAt: {gte: startDay, lte: endDay},
           status: 'SCHEDULED'
         },
-        data: {
-          status: 'CANCELLED'
-        }
       });
+
+      await this.prisma.appointment.updateMany({
+        where: {id: {in: res.map((r) => r.id)}},
+        data: {status: 'CANCELLED'}
+      })
+
+      for (const appt of res){
+        await this.push.notify(
+          appt.customerId,
+          'customer',
+          'Randevunuz iptal edildi',
+          `Randevunuz ${dateStr} tarihi tatil günü ilan edilmesi nedeniyle iptal edildi`,
+        )
+      }
 
       return result
     } catch (error) {
