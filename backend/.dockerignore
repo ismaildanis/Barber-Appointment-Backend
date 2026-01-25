@@ -17,7 +17,6 @@ yarn-error.log*
 .next/
 out/
 build/
-dist/
 
 # Çevresel değişken dosyaları
 .env
