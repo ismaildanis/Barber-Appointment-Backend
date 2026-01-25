@@ -40,6 +40,11 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   const port = Number(process.env.PORT);
+
+  console.log('SERVER STARTING ON', port);
+
   await app.listen(port, '0.0.0.0');
+
+  console.log('SERVER LISTENING');
 }
 bootstrap();
