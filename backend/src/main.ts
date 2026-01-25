@@ -39,7 +39,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  const port = Number(process.env.PORT) || 3001;
-  await app.listen(port);
+  const port = Number(process.env.PORT);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
