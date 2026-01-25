@@ -68,7 +68,7 @@ export class BarberService {
                 image: true
             }
         });
-        if(!barbers) {throw new NotFoundException("Berber bulunamadı")}
+        if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
 
 
         return barbers.map(b => ({
