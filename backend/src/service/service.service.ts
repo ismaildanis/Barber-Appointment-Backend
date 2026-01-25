@@ -22,7 +22,7 @@ export class ServiceService {
   async findAll() {
     const baseUrl = this.config.get<string>('APP_BASE_URL');
     const services = await this.prisma.service.findMany({where: {deletedAt: null}})
-    if(!services) throw new NotFoundException('Hizmetler bulunamadı')
+    if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
 
     return services.map(b => ({
         ...b,
