@@ -717,15 +717,26 @@ export class AppointmentService {
   }
 
   private handleUniqueError(e: unknown): never {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      const t = String(e.meta?.target ?? '');
-      if (t.includes('barberId') && t.includes('appointmentStartAt')) {
-        throw new ConflictException('Bu saat için berber zaten dolu');
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      if(e.code === 'P2002'){
+        const t = String(e.meta?.target ?? '');
+        if (t.includes('barberId') && t.includes('appointmentStartAt')) {
+          throw new ConflictException('Bu saat için berber zaten dolu');
+        }
+        if (t.includes('customerId')) {
+          throw new ConflictException('Zaten bir randevunuz var');
+        }
+        throw new ConflictException('Tekrarlanan kayıt');
       }
-      if (t.includes('customerId')) {
-        throw new ConflictException('Zaten bir randevunuz var');
+      
+      if (
+        e.message.includes('no_barber_overlap') ||
+        e.message.includes('exclusion constraint')
+      ) {
+        throw new ConflictException(
+          'Bu saat aralığında berberin başka bir randevusu var'
+        );
       }
-      throw new ConflictException('Tekrarlanan kayıt');
     }
     throw e;
   }
