@@ -1,5 +1,4 @@
 services:
-  
   api:
     build:
       context: ./backend
@@ -8,14 +7,7 @@ services:
     restart: unless-stopped
 
     env_file:
-      - ./backend/.env
-
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      REFRESH_SECRET: ${REFRESH_SECRET}
-      REFRESH_EXPIRES_IN: ${REFRESH_EXPIRES_IN}
+      - ./backend/.env.local
 
     volumes:
       - ./backend:/app
