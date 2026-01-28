@@ -315,7 +315,7 @@ export class AppointmentService {
         `${dateStr} saat ${timeStr} için ${barber.firstName} ${barber.lastName} ile randevunuz oluşturuldu.`
       );
       await this.push.notify(
-        dto.barberId,
+        barber.id,
         'barber',
         'Yeni bir randevunuz var',
         `${customer.firstName} ${customer.lastName}, ${dateStr} saat ${timeStr} için randevu oluşturdu.`
