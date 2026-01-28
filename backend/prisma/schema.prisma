@@ -168,7 +168,7 @@ model PushToken {
   id        Int      @id @default(autoincrement())
   userId    Int
   role      String 
-  token     String   @unique
+  token     String   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([userId, role])
