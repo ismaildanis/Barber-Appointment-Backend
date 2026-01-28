@@ -8,9 +8,8 @@ import { randomInt } from 'crypto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
 const expo = new Expo();
-import { MailerService } from '@nestjs-modules/mailer';
 import * as brevo from '@getbrevo/brevo';
-
+ 
 @Injectable()
 export class AuthService 
 {
@@ -18,7 +17,6 @@ export class AuthService
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
-        private mailer: MailerService
     ) {
         const apiInstance = new brevo.TransactionalEmailsApi();
         apiInstance.setApiKey(
@@ -251,14 +249,14 @@ export class AuthService
         });
 
         const sendSmtpEmail = new brevo.SendSmtpEmail();
-            sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
-            sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
-            sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'noreply@salon-barber.com' };
-            sendSmtpEmail.to = [{ email: dto.email }];
+        sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
+        sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
+        sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'noreply@salon-barber.com' };
+        sendSmtpEmail.to = [{ email: dto.email }];
 
-            this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
+        this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
             console.error('Brevo API error:', err);
-            });
+        });
 
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }

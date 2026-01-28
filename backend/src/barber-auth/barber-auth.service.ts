@@ -7,17 +7,23 @@ import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'crypto';
 import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
-import { MailerService } from '@nestjs-modules/mailer';
+import * as brevo from '@getbrevo/brevo';
 
 @Injectable()
 export class BarberAuthService {
 
+    private brevoApi: brevo.TransactionalEmailsApi;
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
-        private config: ConfigService,
-        private mailer: MailerService
-    ) {}
+        private config: ConfigService
+    ) {
+        const apiInstance = new brevo.TransactionalEmailsApi();
+        apiInstance.setApiKey(
+            brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || '',
+        );
+        this.brevoApi = apiInstance;
+    }
 
     async login(dto: LoginDto) {
         const barber = await this.prisma.barber.findUnique({where: { email: dto.email }})
@@ -215,13 +221,14 @@ export class BarberAuthService {
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
 
-        this.mailer.sendMail({
-            to: dto.email,
-            subject: 'Şifre sıfırlama kodu',
-            text: `Kodunuz: ${code} (30 dk geçerli)`,
-            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
-        }).catch(err => {
-            console.error('Mail error:', err);
+        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
+        sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
+        sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'noreply@salon-barber.com' };
+        sendSmtpEmail.to = [{ email: dto.email }];
+
+        this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
+            console.error('Brevo API error:', err);
         });
         
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
