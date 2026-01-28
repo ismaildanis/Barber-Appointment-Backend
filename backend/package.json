@@ -21,6 +21,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@nestjs-modules/mailer": "^1.11.2",
     "@nestjs/common": "^10.4.20",
     "@nestjs/config": "^4.0.2",
