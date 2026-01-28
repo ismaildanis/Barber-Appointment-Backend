@@ -4,19 +4,22 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { MailerService } from '@nestjs-modules/mailer';
 import { randomInt } from 'crypto';
 import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
+import { Resend } from 'resend';
 
 @Injectable()
 export class BarberAuthService {
+
+    private resend: Resend;
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
         private config: ConfigService,
-        private mailer: MailerService
-    ) {}
+    ) {
+        this.resend = new Resend(process.env.RESEND_API_KEY);
+    }
 
     async login(dto: LoginDto) {
         const barber = await this.prisma.barber.findUnique({where: { email: dto.email }})
@@ -213,12 +216,16 @@ export class BarberAuthService {
         await this.prisma.passwordReset.create({
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
-        await this.mailer.sendMail({
-            to: dto.email,
-            subject: 'Şifre sıfırlama kodu',
-            text: `Kodunuz: ${code} (30 dk geçerli)`,
-            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
-        });
+        try {
+            await this.resend.emails.send({
+                from: 'SALON BARBER <onboarding@resend.dev>',
+                to: dto.email,
+                subject: 'Şifre sıfırlama kodu',
+                html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+            });
+        } catch (error) {
+            console.error('Resend error:', error);
+        }
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
     

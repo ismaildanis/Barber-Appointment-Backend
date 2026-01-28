@@ -32,17 +32,21 @@ import { CustomerModule } from './customer/customer.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
+    
     MailerModule.forRoot({
-        transport: {
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT),
-          secure: false,
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      transport: {
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT),
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
         },
-        defaults: { from: `"Destek" <${process.env.VENDOR_NAME}>` },
-      }),
-
+      },
+      defaults: {
+        from: `"SALON BARBER" <${process.env.SMTP_USER}>`,
+      },
+    }),
     ThrottlerModule.forRoot([
       {
         ttl: 60,   // 60 saniyede
