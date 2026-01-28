@@ -172,7 +172,7 @@ model PushToken {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([userId, role])
-  @@unique([userId, role])
+  @@unique([userId, role], name: "userId_role")
 }
 
 model Notification {

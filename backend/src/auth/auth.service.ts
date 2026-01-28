@@ -8,12 +8,10 @@ import { randomInt } from 'crypto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
 const expo = new Expo();
-import { Resend } from 'resend';
 import { MailerService } from '@nestjs-modules/mailer';
 @Injectable()
 export class AuthService 
 {
-    private resend: Resend;
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
