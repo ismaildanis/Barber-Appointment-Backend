@@ -5,23 +5,17 @@ services:
       dockerfile: Dockerfile
     container_name: nest-api
     restart: unless-stopped
-
     env_file:
       - ./backend/.env.local
-
     volumes:
       - ./backend:/app
       - /app/node_modules
-
     command: npm run start:dev
-
     ports:
       - "3001:3001"
-
     depends_on:
       - postgres
       - redis
-
     networks:
       - app-network
 
