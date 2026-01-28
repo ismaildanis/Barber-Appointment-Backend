@@ -8,19 +8,14 @@ import { randomInt } from 'crypto';
 import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
 const expo = new Expo();
-import { Resend } from 'resend';
 @Injectable()
 export class AdminAuthService {
 
-    private resend: Resend
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
         private mailer: MailerService
-    ) {
-        this.resend = new Resend("re_MS2Bh28U_216L4yHR1XEGULyPEHuQ6iig");
-
-    }
+    ) {}
 
     async login(dto: LoginDto)
     {
@@ -217,16 +212,12 @@ export class AdminAuthService {
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
 
-        try {
-            await this.resend.emails.send({
-                from: 'SALON BARBER <onboarding@resend.dev>',
-                to: dto.email,
-                subject: 'Şifre sıfırlama kodu',
-                html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
-            });
-        } catch (error) {
-            console.error('Resend error:', error);
-        }
+        await this.mailer.sendMail({
+            to: dto.email,
+            subject: 'Şifre sıfırlama kodu',
+            text: `Kodunuz: ${code} (30 dk geçerli)`,
+            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+        });
 
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }

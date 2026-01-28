@@ -9,6 +9,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { Expo } from 'expo-server-sdk';
 const expo = new Expo();
 import { Resend } from 'resend';
+import { MailerService } from '@nestjs-modules/mailer';
 @Injectable()
 export class AuthService 
 {
@@ -16,9 +17,8 @@ export class AuthService
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
-    ) {
-        this.resend = new Resend("re_MS2Bh28U_216L4yHR1XEGULyPEHuQ6iig");
-    }
+        private mailer: MailerService
+    ) {}
 
     async register(dto: RegisterDto)
     {
@@ -243,16 +243,12 @@ export class AuthService
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
 
-        try {
-            await this.resend.emails.send({
-                from: 'SALON BARBER <onboarding@resend.dev>',
-                to: dto.email,
-                subject: 'Şifre sıfırlama kodu',
-                html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
-            });
-        } catch (error) {
-            console.error('Resend error:', error);
-        }
+        await this.mailer.sendMail({
+            to: dto.email,
+            subject: 'Şifre sıfırlama kodu',
+            text: `Kodunuz: ${code} (30 dk geçerli)`,
+            html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+        });
 
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
