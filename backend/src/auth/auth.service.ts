@@ -241,11 +241,13 @@ export class AuthService
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
 
-        await this.mailer.sendMail({
+        this.mailer.sendMail({
             to: dto.email,
             subject: 'Şifre sıfırlama kodu',
             text: `Kodunuz: ${code} (30 dk geçerli)`,
             html: `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`,
+        }).catch(err => {
+            console.error('Mail error:', err);
         });
 
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
