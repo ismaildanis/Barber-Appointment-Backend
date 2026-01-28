@@ -128,6 +128,12 @@ export class AuthService
             },
         });
 
+        await this.prisma.pushToken.deleteMany({
+            where: { 
+                userId: customerId,
+                role: "customer"
+            }
+        });
 
         return {
             message: "Çıkış başarılı",
@@ -300,14 +306,29 @@ export class AuthService
 
     async pushRegister(customerId: number, dto: { token: string }) {
         const token = dto.token;
-        if (!Expo.isExpoPushToken(token)) throw new BadRequestException('Geçersiz anahtar');
+        if (!Expo.isExpoPushToken(token)) {
+            throw new BadRequestException('Geçersiz anahtar');
+        }
 
         await this.prisma.pushToken.upsert({
-            where: { token },
-            update: { userId: customerId, role: 'customer', updatedAt: new Date() },
-            create: { userId: customerId, role: 'customer', token },
+            where: {
+                userId_role: {
+                    userId: customerId,
+                    role: 'customer',
+                },
+            },
+            update: {
+                token,
+                updatedAt: new Date(),
+            },
+            create: {
+                userId: customerId,
+                role: 'customer',
+                token,
+            },
         });
 
         return { ok: true };
     }
+
 }

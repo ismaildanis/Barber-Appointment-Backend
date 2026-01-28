@@ -113,6 +113,13 @@ export class BarberAuthService {
             }
         })
 
+        await this.prisma.pushToken.deleteMany({
+            where: { 
+                userId: barberId,
+                role: "barber"
+            }
+        });
+
         return {
             message: "Çıkış başarılı"
         }

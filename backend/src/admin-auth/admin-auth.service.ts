@@ -99,6 +99,13 @@ export class AdminAuthService {
             }
         })
 
+        await this.prisma.pushToken.deleteMany({
+            where: { 
+                userId: adminId,
+                role: "admin"
+            }
+        });
+
         return { message: "Çıkış Başarılı" }
     }
     async refreshTokens(adminId: number) {
