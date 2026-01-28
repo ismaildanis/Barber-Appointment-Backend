@@ -282,9 +282,21 @@ export class AdminAuthService {
         if (!Expo.isExpoPushToken(token)) throw new BadRequestException('Geçersiz anahtar');
 
         await this.prisma.pushToken.upsert({
-            where: { token },
-            update: { userId: adminId, role: 'admin', updatedAt: new Date() },
-            create: { userId: adminId, role: 'admin', token },
+            where: {
+                userId_role: {
+                    userId: adminId,
+                    role: 'admin',
+                },
+            },
+            update: {
+                token,
+                updatedAt: new Date(),
+            },
+            create: {
+                userId: adminId,
+                role: 'admin',
+                token,
+            },
         });
 
         return { ok: true };

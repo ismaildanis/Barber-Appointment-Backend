@@ -281,9 +281,21 @@ export class BarberAuthService {
         if (!Expo.isExpoPushToken(token)) throw new BadRequestException('Geçersiz anahtar');
 
         await this.prisma.pushToken.upsert({
-            where: { token },
-            update: { userId: barberId, role: 'barber', updatedAt: new Date() },
-            create: { userId: barberId, role: 'barber', token },
+            where: {
+                userId_role: {
+                    userId: barberId,
+                    role: 'barber',
+                },
+            },
+            update: {
+                token,
+                updatedAt: new Date(),
+            },
+            create: {
+                userId: barberId,
+                role: 'barber',
+                token,
+            },
         });
 
         return { ok: true };
