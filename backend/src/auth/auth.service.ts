@@ -17,7 +17,7 @@ export class AuthService
         private prisma: PrismaService,
         private jwt: JwtService,
     ) {
-        this.resend = new Resend(process.env.RESEND_API_KEY);
+        this.resend = new Resend("re_MS2Bh28U_216L4yHR1XEGULyPEHuQ6iig");
     }
 
     async register(dto: RegisterDto)
@@ -242,7 +242,7 @@ export class AuthService
         await this.prisma.passwordReset.create({
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
-        
+
         try {
             await this.resend.emails.send({
                 from: 'SALON BARBER <onboarding@resend.dev>',

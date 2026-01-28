@@ -18,7 +18,7 @@ export class BarberAuthService {
         private jwt: JwtService,
         private config: ConfigService,
     ) {
-        this.resend = new Resend(process.env.RESEND_API_KEY);
+        this.resend = new Resend("re_MS2Bh28U_216L4yHR1XEGULyPEHuQ6iig");
     }
 
     async login(dto: LoginDto) {
