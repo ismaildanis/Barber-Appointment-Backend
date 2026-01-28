@@ -219,15 +219,19 @@ export class AdminAuthService {
             data: { email: dto.email, tokenHash: tokenHash, expiresAt },
         });
 
-        const sendSmtpEmail = new brevo.SendSmtpEmail();
-        sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
-        sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
-        sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'noreply@salon-barber.com' };
-        sendSmtpEmail.to = [{ email: dto.email }];
-
-        this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
-            console.error('Brevo API error:', err);
-        });
+        try {
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
+            sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
+            sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'danisismail4573@gmail.com' };
+            sendSmtpEmail.to = [{ email: dto.email }];
+    
+            this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
+                console.error('Brevo API error:', err);
+            });
+        } catch (error) {
+            console.error('Brevo API error:', error);
+        }
 
         return { message: "Sıfırlama kodu e-posta ile gönderildi"}
     }
