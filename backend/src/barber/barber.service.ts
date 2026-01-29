@@ -40,7 +40,7 @@ export class BarberService {
                     firstName: dto.firstName,
                     lastName: dto.lastName,
                     email: dto.email,
-                    phone: dto.phone,
+                    phone: dto.phone ?? null,
                     password: hashedPassword,
                 }
             })

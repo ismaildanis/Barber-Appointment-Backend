@@ -19,7 +19,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config'; 
 import { WorkingHourController } from './working-hour/working-hour.controller';
 import { WorkingHourModule } from './working-hour/working-hour.module';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomerModule } from './customer/customer.module';
 
@@ -32,21 +31,7 @@ import { CustomerModule } from './customer/customer.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      },
-      defaults: {
-        from: `"SALON BARBER" <${process.env.SMTP_USER}>`,
-      },
-    }),
+
     ThrottlerModule.forRoot([
       {
         ttl: 60,   // 60 saniyede

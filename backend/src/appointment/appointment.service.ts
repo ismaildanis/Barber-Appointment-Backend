@@ -493,7 +493,7 @@ export class AppointmentService {
         barberId,
         appointmentStartAt: { gte: start, lt: end },
       },
-      orderBy: { appointmentStartAt: 'asc' },
+      orderBy: { appointmentStartAt: 'desc' },
       
       include: { 
         appointmentServices: {
@@ -533,12 +533,14 @@ export class AppointmentService {
       const base = `${startStr} - ${weekDay} tarihinde aldığınız berber ${barber?.firstName} ${barber?.lastName} için randevunuz iptal edildi.`;
       const body = reason ? `${base} Sebep: ${reason}.` : base;
 
-      await this.push.notify(
-        markAppointment.customerId,
-        'customer',
-        'Randevunuz iptal edildi',
-        body
-      );
+      if (markAppointment.customerId) {
+        await this.push.notify(
+          markAppointment.customerId,
+          'customer',
+          'Randevunuz iptal edildi',
+          body
+        );
+      }
       return {message: "Randevu iptal edildi olarak işaretlendi"}
     } catch (error) {
       throw new Error(error)
@@ -597,6 +599,25 @@ export class AppointmentService {
       throw new Error(error)
     }
   }
+
+  async markNoShowForBarber(barberId: number, appointmentId: number) {
+    const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
+    if (!barber) throw new UnauthorizedException('Berber bulunamadı');
+
+    const appt = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId, barberId },
+    });
+
+    if (!appt) throw new NotFoundException('Randevu bulunamadı');
+    if (appt.status == "COMPLETED") {throw new BadRequestException("Bu randevu zaten tamamlandı")}
+    if (appt.status != "SCHEDULED" && appt.status != "EXPIRED" ) {throw new BadRequestException("Bu randevu gelinmedi olarak işaretlenemez")}
+    try {
+      await this.prisma.appointment.update({where: {id: appointmentId}, data: {status: "NO_SHOW"}})
+      return {message: "Randevu gelinmedi olarak işaretlendi"}
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
   
   async cancelByBarber(barberId: number, appointmentId: number, dto: BarberCancelDto) {
     const barber = await this.prisma.barber.findUnique({ where: { id: barberId } });
@@ -616,12 +637,14 @@ export class AppointmentService {
     const base = `${startStr} - ${weekDay} tarihinde ${barber.firstName} ${barber.lastName} için randevunuz iptal edildi.`;
     const body = reason ? `${base} Sebep: ${reason}.` : base;
 
-    await this.push.notify(
-      appt.customerId,
-      'customer',
-      'Randevunuz iptal edildi',
-      body
-    );
+    if (appt.customerId) {
+      await this.push.notify(
+        appt.customerId,
+        'customer',
+        'Randevunuz iptal edildi',
+        body
+      );
+    }
     return { message: 'Randevu iptal edildi' };
   }
 
@@ -675,14 +698,16 @@ export class AppointmentService {
             cancelledAt: new Date(),
           },
         });
-
+ 
         for (const appt of cancelledAppts) {
-          await this.push.notify(
-            appt.customerId,
-            'customer',
-            'Randevunuz iptal edildi',
-            'Berber mola verdiği için randevunuz iptal edildi.'
-          );
+          if (appt.customerId) {
+            await this.push.notify(
+              appt.customerId,
+              'customer',
+              'Randevunuz iptal edildi',
+              'Berber mola verdiği için randevunuz iptal edildi.'
+            );
+          }
         }
           
         return { message: "Mola eklendi ve çakışan randevular iptal edildi.", breakPeriod };

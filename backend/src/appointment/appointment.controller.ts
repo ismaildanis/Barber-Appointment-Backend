@@ -154,6 +154,12 @@ export class AppointmentController
         return this.appointmentService.markCompletedForBarber(req.barber.sub, id)
     }
 
+    @Post('barber-mark-no-show/:id')   
+    @UseGuards(JwtBarberGuard)
+    markNoShowForBarber(@Param('id', ParseIntPipe) id: number, @Req() req: any){
+        return this.appointmentService.markNoShowForBarber(req.barber.sub, id)
+    }
+
     @Post('barber-cancel/:id')
     @UseGuards(JwtBarberGuard)
     cancelByBarber(

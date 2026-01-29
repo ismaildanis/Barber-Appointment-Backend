@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, MinLength } from "class-validator";
+import { IsEmail, IsNotEmpty, IsOptional, MinLength } from "class-validator";
 
 export class CreateBarberDto {
     @IsEmail()
@@ -11,8 +11,8 @@ export class CreateBarberDto {
     @IsNotEmpty()
     lastName: string
 
-    @IsNotEmpty()
-    phone: string
+    @IsOptional()
+    phone?: string
 
     @IsNotEmpty()
     @MinLength(6)

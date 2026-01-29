@@ -27,6 +27,9 @@ export class AuthService
 
     async register(dto: RegisterDto)
     {
+        if (dto.password !== dto.passwordConfirm) {
+            throw new BadRequestException('Şifreler eşleşmiyor.');
+        }
         const email = dto.email;    
         const exists =
             (await this.prisma.customer.findUnique({ where: { email } })) ||
@@ -42,7 +45,7 @@ export class AuthService
                 firstName: dto.firstName,
                 lastName: dto.lastName,
                 email: dto.email,
-                phone: dto.phone,
+                phone: dto.phone ?? null,
                 password: hashedPassword,
             }
         })
@@ -109,7 +112,7 @@ export class AuthService
             firstName: customer.firstName,
             lastName: customer.lastName,
             email: customer.email,
-            phone: customer.phone,
+            phone: customer.phone ?? null,
             role: "customer",
         }
     }
@@ -230,7 +233,7 @@ export class AuthService
             firstName: customer.firstName,
             lastName: customer.lastName,
             email: customer.email,
-            phone: customer.phone,
+            phone: customer.phone ?? null,
             },
         };
     }
@@ -251,14 +254,21 @@ export class AuthService
         try {
             const sendSmtpEmail = new brevo.SendSmtpEmail();
             sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
-            sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
-            sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'danisismail4573@gmail.com' };
+            sendSmtpEmail.htmlContent = `
+                <p>Merhaba,</p>
+                <p>Şifrenizi sıfırlamak için kodunuz:</p>
+                <h2>${code}</h2>
+                <p>Bu kod 30 dakika geçerlidir.</p>
+                <p>Bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+                <br>
+                <p>${process.env.VENDOR_NAME}</p>
+            `;            
+            sendSmtpEmail.sender = { name: process.env.VENDOR_NAME, email: 'danisismail4573@gmail.com' };
             sendSmtpEmail.to = [{ email: dto.email }];
     
             this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {
                 console.error('Brevo API error:', err);
             });
-            console.log('Sıfırlama kodu e-posta ile gönderildi');
         } catch (error) {
             console.error('Brevo API error:', error);
         }

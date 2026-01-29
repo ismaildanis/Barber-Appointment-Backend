@@ -49,12 +49,14 @@ export class HolidayService {
       })
 
       for (const appt of res){
-        await this.push.notify(
-          appt.customerId,
-          'customer',
-          'Randevunuz iptal edildi',
-          `Randevunuz ${dateStr} tarihi tatil günü ilan edilmesi nedeniyle iptal edildi`,
-        )
+        if (appt.customerId) {
+          await this.push.notify(
+            appt.customerId,
+            'customer',
+            'Randevunuz iptal edildi',
+            `Randevunuz ${dateStr} tarihi tatil günü ilan edilmesi nedeniyle iptal edildi`,
+          )
+        }
       }
 
       return result

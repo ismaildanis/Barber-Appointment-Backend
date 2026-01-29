@@ -149,7 +149,7 @@ export class BarberAuthService {
             email: barber.email,
             firstName: barber.firstName,
             lastName: barber.lastName,
-            phone: barber.phone,
+            phone: barber.phone ?? null,
             image: barber.image ? `${baseUrl}/${barber.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`,
             role: "barber",
             active: barber.active
@@ -204,7 +204,7 @@ export class BarberAuthService {
             firstName: barber.firstName,
             lastName: barber.lastName,
             email: barber.email,
-            phone: barber.phone,
+            phone: barber.phone ?? null,
             },
         };
     }
@@ -224,8 +224,16 @@ export class BarberAuthService {
         try {
             const sendSmtpEmail = new brevo.SendSmtpEmail();
             sendSmtpEmail.subject = 'Şifre sıfırlama kodu';
-            sendSmtpEmail.htmlContent = `<p>Kodunuz: <b>${code}</b> (30 dk geçerli)</p>`;
-            sendSmtpEmail.sender = { name: 'SALON BARBER', email: 'danisismail4573@gmail.com' };
+            sendSmtpEmail.htmlContent = `
+                <p>Merhaba,</p>
+                <p>Şifrenizi sıfırlamak için kodunuz:</p>
+                <h2>${code}</h2>
+                <p>Bu kod 30 dakika geçerlidir.</p>
+                <p>Bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+                <br>
+                <p>${process.env.VENDOR_NAME}</p>
+            `;
+            sendSmtpEmail.sender = { name: process.env.VENDOR_NAME, email: 'danisismail4573@gmail.com' };
             sendSmtpEmail.to = [{ email: dto.email }];
     
             this.brevoApi.sendTransacEmail(sendSmtpEmail).catch(err => {

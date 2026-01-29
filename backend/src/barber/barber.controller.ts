@@ -4,14 +4,13 @@ import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { CreateBarberDto } from './dto/create-barber.dto';
 import { JwtBarberGuard } from 'src/barber-auth/guards/jwt-barber-auth.guard';
 import { ActivityBarberDto } from './dto/activity-barber.dto';
-import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateBarberDto } from './dto/update-barber.dto';
 
 @Controller('barber')
 export class BarberController {
-    constructor(private barberService: BarberService, private config: ConfigService) {}
+    constructor(private barberService: BarberService) {}
 
     @Post()
     @UseGuards(JwtAdminGuard)

@@ -15,7 +15,7 @@ async function main() {
       firstName: 'Admin',
       lastName: 'Admin',
       email: adminEmail,
-      phone: '0000000000',
+      phone: null,
       password: adminPassword,
       refreshToken: null,
     },

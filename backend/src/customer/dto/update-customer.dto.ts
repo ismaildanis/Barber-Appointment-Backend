@@ -1,4 +1,4 @@
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty, IsOptional } from "class-validator";
 
 export class UpdateCustomerDto {
 
@@ -8,7 +8,7 @@ export class UpdateCustomerDto {
     @IsNotEmpty()
     lastName: string
 
-    @IsNotEmpty()
-    phone: string
+    @IsOptional()
+    phone?: string
 
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -9,8 +9,14 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard)
   @Put('update')
-  async update(@Body() updateCustomerDto: UpdateCustomerDto, @Req() req: any) {
-    return await this.customerService.update(req.customer!.sub, updateCustomerDto);
+  async update(@Body() dto: UpdateCustomerDto, @Req() req: any) {
+    return await this.customerService.update(req.customer!.sub, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete')
+  async delete(@Req() req: any) {
+    return await this.customerService.delete(req.customer!.sub);
   }
 
 }

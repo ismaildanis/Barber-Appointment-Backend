@@ -21,7 +21,7 @@ model Customer {
   email        String        @unique
   firstName    String
   lastName     String
-  phone        String        @unique
+  phone        String?        @unique
   password     String
   refreshToken String?
   createdAt    DateTime      @default(now())
@@ -35,7 +35,7 @@ model Barber {
   email        String        @unique
   firstName    String
   lastName     String
-  phone        String        @unique
+  phone        String?        @unique
   password     String
   active       Boolean       @default(true)
   image        String?
@@ -54,7 +54,7 @@ model Admin {
   email        String    @unique
   firstName    String
   lastName     String
-  phone        String    @unique
+  phone        String?    @unique
   password     String
   refreshToken String?
   createdAt    DateTime  @default(now())
@@ -63,7 +63,7 @@ model Admin {
 
 model Appointment {
   id            Int        @id @default(autoincrement())
-  customerId    Int
+  customerId    Int?
   barberId      Int
   
   appointmentStartAt DateTime
@@ -76,7 +76,7 @@ model Appointment {
   updatedAt     DateTime   @updatedAt
   cancelledAt   DateTime? 
 
-  customer      Customer   @relation(fields: [customerId], references: [id])
+  customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   barber        Barber     @relation(fields: [barberId], references: [id])
 
   appointmentServices AppointmentService[]
@@ -160,7 +160,6 @@ model PasswordReset {
   createdAt DateTime @default(now())
 
   @@index([email])
-  @@index([phone])
   @@index([expiresAt])
 }
 
