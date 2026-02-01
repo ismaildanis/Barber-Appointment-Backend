@@ -53,25 +53,25 @@ async function main() {
       name: "Modern Sakal Tıraşı",
       description: "Modern çizim ve şekillendirme ile sakal tıraşı.",
       price: 250,
-      duration: 20,
+      duration: 30,
     },
     {
       name: "Saç Yıkama ve Fön",
       description: "Saç yıkama, bakım ve profesyonel fön işlemi.",
       price: 250,
-      duration: 20,
+      duration: 30,
     },
     {
       name: "Usturayla Sakal Tıraşı",
       description: "Klasik ustura tıraşı, sıcak havlu uygulamalı.",
       price: 250,
-      duration: 20,
+      duration: 30,
     },
     {
       name: "Çocuk Saç Kesimi",
       description: "10 yaş altı çocuk saç kesimi.",
       price: 400,
-      duration: 25,
+      duration: 30,
     },
     {
       name: "Anatomik Kaş Tasarımı",
@@ -101,19 +101,19 @@ async function main() {
       name: "Saç Karbon Maskesi",
       description: "Yağ ve kir temizleyen karbon saç maskesi.",
       price: 500,
-      duration: 25,
+      duration: 15,
     },
     {
       name: "Saç Biotin ve Kolajen Maskesi",
       description: "Biotin + kolajen ile saç güçlendirme bakımı.",
       price: 500,
-      duration: 25,
+      duration: 30,
     },
     {
       name: "Saç Protein Maskesi",
       description: "Yoğun protein saç maskesi.",
       price: 500,
-      duration: 25,
+      duration: 15,
     },
   ];
 
