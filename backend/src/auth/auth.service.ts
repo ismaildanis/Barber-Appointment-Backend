@@ -229,11 +229,11 @@ export class AuthService
             accessToken,
             refreshToken,
             user: {
-            id: customer.id,
-            firstName: customer.firstName,
-            lastName: customer.lastName,
-            email: customer.email,
-            phone: customer.phone ?? null,
+                id: customer.id,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                email: customer.email,
+                phone: customer.phone ?? null,
             },
         };
     }

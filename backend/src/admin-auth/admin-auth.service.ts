@@ -63,6 +63,10 @@ export class AdminAuthService {
             refreshToken,
         }
     }
+
+    async create(dto){
+        
+    }
     
 
     async getMe(adminId: number){

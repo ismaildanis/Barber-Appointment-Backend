@@ -4,8 +4,6 @@ import { AppModule } from './app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 const cookieParser = require('cookie-parser');
-import * as utc from 'dayjs/plugin/utc';
-import * as timezone from 'dayjs/plugin/timezone';
 import { join } from 'path';
 import * as express from 'express';
 async function bootstrap() {

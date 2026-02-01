@@ -13,7 +13,7 @@ export class JwtUnifiedStrategy extends PassportStrategy(Strategy, 'unified-jwt'
     });
   }
 
-  async validate(payload: { sub: number; role: 'customer'|'barber'|'admin'; email?: string }) {
+  async validate(payload: { sub: number; role: 'customer'|'barber'|'admin'|'platform'; email?: string }) {
     if (payload.role === 'customer') {
       const u = await this.prisma.customer.findUnique({ where: { id: payload.sub } });
       if (!u) throw new UnauthorizedException();
@@ -21,13 +21,18 @@ export class JwtUnifiedStrategy extends PassportStrategy(Strategy, 'unified-jwt'
     }
     if (payload.role === 'barber') {
       const u = await this.prisma.barber.findUnique({ where: { id: payload.sub } });
-      if (!u) throw new UnauthorizedException();
+      if (!u || u.deletedAt) throw new UnauthorizedException();
       return { sub: u.id, role: 'barber', email: u.email };
     }
     if (payload.role === 'admin') {
       const u = await this.prisma.admin.findUnique({ where: { id: payload.sub } });
       if (!u) throw new UnauthorizedException();
       return { sub: u.id, role: 'admin', email: u.email };
+    }
+
+    if (payload.role === 'platform') {
+      if (payload.email !== process.env.PLATFORM_EMAIL) throw new UnauthorizedException();
+      return { sub: payload.sub, role: 'platform', email: payload.email };
     }
     throw new UnauthorizedException();
   }
