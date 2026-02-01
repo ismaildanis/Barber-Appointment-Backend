@@ -20,6 +20,6 @@ export class HolidayController {
 
     @Delete(':id')
     remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-        return this.holidayService.remove(req.admin.sub, id);
+        return this.holidayService.remove(req.admin.shopId, id);
     }
 }

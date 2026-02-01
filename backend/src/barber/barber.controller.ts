@@ -14,31 +14,31 @@ export class BarberController {
 
     @Post()
     @UseGuards(JwtAdminGuard)
-    create(@Body() dto: CreateBarberDto, @Req() req: any) {
-        return this.barberService.create(dto, req.admin!.sub);
+    async create(@Body() dto: CreateBarberDto, @Req() req: any) {
+        return await this.barberService.create(dto, req.admin!.sub);
     }
 
-    @Get()
-    findAll() {
-        return this.barberService.findAll();
+    @Get(':slug')
+    async findAllForShop(@Param('slug') slug: string) {
+        return await this.barberService.findAllForShop(slug);
     }
 
-    @Get(':id')
+    @Get(':slug/:id')
     @UseGuards(JwtAdminGuard)
-    findOne(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
-        return this.barberService.findOne(req.admin!.sub, barberId);
+    async findOne(@Req() req: any, @Param('id', ParseIntPipe) barberId: number,) {
+        return await this.barberService.findOne(req.admin!.sub, barberId);
     }
 
     @Delete(':id')
     @UseGuards(JwtAdminGuard)
-    delete(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
-        return this.barberService.delete(req.admin!.sub, barberId);
+    async delete(@Req() req: any, @Param('id', ParseIntPipe) barberId: number) {
+        return await this.barberService.delete(req.admin!.sub, barberId);
     }
 
     @Post('/image')
     @UseGuards(JwtBarberGuard)
     @UseInterceptors(FileInterceptor('file'))
-    uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+    async uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
         const fileName = `${req.barber.sub}-${Date.now()}.jpg`;
         const folder = `uploads/barbers`;
         const filePath = `${folder}/${fileName}`;
@@ -46,25 +46,25 @@ export class BarberController {
         fs.mkdirSync(folder, { recursive: true });
         fs.writeFileSync(filePath, file.buffer);
 
-        return this.barberService.uploadImage(req.barber.sub, filePath);
+        return await this.barberService.uploadImage(req.barber.sub, filePath);
     }
 
     @Put('/image')
     @UseGuards(JwtBarberGuard)
-    deleteImage(@Req() req: any) {
-        return this.barberService.deleteImage(req.barber.sub);
+    async deleteImage(@Req() req: any) {
+        return await this.barberService.deleteImage(req.barber.sub);
     }
     
     @Put('update')
     @UseGuards(JwtBarberGuard)
-    updateBarber(@Req() req: any, @Body() dto: UpdateBarberDto) {
-        return this.barberService.updateBarber(req.barber.sub, dto); 
+    async updateBarber(@Req() req: any, @Body() dto: UpdateBarberDto) {
+        return await this.barberService.updateBarber(req.barber.sub, dto); 
     }
     
     @Put(':id')
     @UseGuards(JwtAdminGuard)
-    isActive(@Req() req: any, @Param('id', ParseIntPipe) barberId: number, @Body() dto: ActivityBarberDto) {
-        return this.barberService.update(req.admin!.sub, barberId, dto); 
+    async isActive(@Req() req: any, @Param('id', ParseIntPipe) barberId: number, @Body() dto: ActivityBarberDto) {
+        return await this.barberService.update(req.admin!.sub, barberId, dto); 
     }
 
 }

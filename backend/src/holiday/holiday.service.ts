@@ -10,71 +10,66 @@ export class HolidayService {
     private push: PushService
   ) {}
 
-  async create(adminId: number, dto: CreateHolidayDto) {
-    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
-    if (!admin) throw new UnauthorizedException('Admin bulunamadı');
+  async create(shopId: number, dto: CreateHolidayDto) {
+    const dateOnly = dayjs(dto.date).startOf('day').toDate();
 
-    const dateOnly = new Date(dto.date);
-    const exists = await this.prisma.holidayDate.findUnique({
-      where: { date: dateOnly }
+    const exists = await this.prisma.holidayDate.findFirst({
+      where: { shopId, date: dateOnly },
     });
 
     if (exists) {
       throw new ConflictException('Bu gün zaten tatil ilan edilmiş.');
     }
-    try {
-      const result = await this.prisma.holidayDate.create({
-        data: {
-          date: dateOnly,
-          reason: dto.reason
-        }
+
+    const { holiday, appointments } = await this.prisma.$transaction(async (tx) => {
+      const holiday = await tx.holidayDate.create({
+        data: { shopId, date: dateOnly, reason: dto.reason },
       });
-      const startDay = dayjs(result.date).startOf('day').toDate();
-      const endDay = dayjs(result.date).endOf('day').toDate(); 
-      const dateStr = dateOnly.toLocaleDateString('tr-TR', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-      });
-      const res = await this.prisma.appointment.findMany({
+
+      const startDay = dayjs(dateOnly).startOf('day').toDate();
+      const endDay = dayjs(dateOnly).endOf('day').toDate();
+
+      const appointments = await tx.appointment.findMany({
         where: {
-          appointmentStartAt: {gte: startDay, lte: endDay},
-          status: 'SCHEDULED'
+          shopId,
+          appointmentStartAt: { gte: startDay, lte: endDay },
+          status: 'SCHEDULED',
         },
       });
 
-      await this.prisma.appointment.updateMany({
-        where: {id: {in: res.map((r) => r.id)}},
-        data: {status: 'CANCELLED'}
-      })
+      await tx.appointment.updateMany({
+        where: { id: { in: appointments.map(a => a.id) } },
+        data: { status: 'CANCELLED' },
+      });
 
-      for (const appt of res){
-        if (appt.customerId) {
-          await this.push.notify(
-            appt.customerId,
-            'customer',
-            'Randevunuz iptal edildi',
-            `Randevunuz ${dateStr} tarihi tatil günü ilan edilmesi nedeniyle iptal edildi`,
-          )
-        }
+      return { holiday, appointments };
+    });
+
+    const dateStr = dayjs(dateOnly).locale('tr').format('DD MMMM dddd');
+
+    for (const appt of appointments){
+      if (appt.customerId) {
+        await this.push.notify(
+          appt.customerId,
+          'customer',
+          'Randevunuz iptal edildi',
+          `Randevunuz ${dateStr} tarihi tatil günü ilan edildi`,
+        )
       }
-
-      return result
-    } catch (error) {
-      throw new Error(error);
     }
+    return holiday
   }
 
   async findAll(adminId: number) {
     const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
     if (!admin) throw new UnauthorizedException('Admin bulunamadı');
-    return this.prisma.holidayDate.findMany({ orderBy: { date: 'asc' } });
+    return this.prisma.holidayDate.findMany({ where: { shopId: admin.shopId }, orderBy: { date: 'desc' } });
   }
 
   async remove(adminId: number, id: number) {
     const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
     if (!admin) throw new UnauthorizedException('Admin bulunamadı');
-    await this.prisma.holidayDate.delete({ where: { id } });
+    await this.prisma.holidayDate.delete({ where: { shopId: admin.shopId, id: id } });
     return { message: 'Tatil ilanı başarıyla silindi' };
   }
 }

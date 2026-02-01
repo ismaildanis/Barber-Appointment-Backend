@@ -32,6 +32,7 @@ model Customer {
 
 model Barber {
   id           Int           @id @default(autoincrement())
+  shopId       Int
   email        String        @unique
   firstName    String
   lastName     String
@@ -45,12 +46,15 @@ model Barber {
   deletedAt    DateTime?
 
   breaks        BreakPeriod[]
-  appointments Appointment[]
+  appointments  Appointment[]
   workingHours  WorkingHour[]
+
+  shop          Shop @relation(fields: [shopId], references: [id])
 }
 
 model Admin {
   id           Int       @id @default(autoincrement())
+  shopId       Int
   email        String    @unique
   firstName    String
   lastName     String
@@ -59,13 +63,37 @@ model Admin {
   refreshToken String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  shop         Shop @relation(fields: [shopId], references: [id])
+}
+
+model Shop {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  city      String
+  district  String
+  neighborhood String
+  address   String    
+  phone     String?   @unique
+  email     String    @unique
+  image     String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  admins    Admin[]
+  barbers   Barber[]
+  appointments Appointment[]
+  holidayDates HolidayDate[]
+  services  Service[]
 }
 
 model Appointment {
   id            Int        @id @default(autoincrement())
   customerId    Int?
   barberId      Int
-  
+  shopId        Int
   appointmentStartAt DateTime
   appointmentEndAt   DateTime
 
@@ -76,6 +104,7 @@ model Appointment {
   updatedAt     DateTime   @updatedAt
   cancelledAt   DateTime? 
 
+  shop          Shop       @relation(fields: [shopId], references: [id])
   customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   barber        Barber     @relation(fields: [barberId], references: [id])
 
@@ -88,6 +117,7 @@ model Appointment {
 
 model Service {
   id           Int           @id @default(autoincrement())
+  shopId       Int
   name         String
   description  String?
   price        Decimal       @db.Decimal(10, 2)
@@ -98,6 +128,7 @@ model Service {
   deletedAt    DateTime?
 
   appointmentServices AppointmentService[]
+  shop        Shop @relation(fields: [shopId], references: [id])
 }
 
 model AppointmentService {
@@ -145,9 +176,12 @@ model BreakPeriod {
 
 model HolidayDate {
   id          Int    @id @default(autoincrement())
-  date        DateTime @unique
+  shopId      Int
+  date        DateTime 
   reason      String
   createdAt   DateTime @default(now())
+
+  shop        Shop @relation(fields: [shopId], references: [id])
 }
 
 model PasswordReset {

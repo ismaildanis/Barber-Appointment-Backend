@@ -23,7 +23,7 @@ export class BarberService {
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
 
-          const email = dto.email;
+        const email = dto.email;
 
         const exists =
             (await this.prisma.customer.findUnique({ where: { email } })) ||
@@ -37,6 +37,7 @@ export class BarberService {
         try {
             const barber = await this.prisma.barber.create({
                 data: {
+                    shopId: admin.shopId,
                     firstName: dto.firstName,
                     lastName: dto.lastName,
                     email: dto.email,
@@ -54,12 +55,19 @@ export class BarberService {
         }
     }
 
-    async findAll() {
+    async findAllForShop(slug: string) {
+        const shop = await this.prisma.shop.findUnique({
+            where: {
+                slug: slug
+            }
+        })
+        if(!shop) {throw new NotFoundException("Dükkan bulunamadı")}
         const baseUrl = this.config.get<string>('APP_BASE_URL');
         const barbers = await this.prisma.barber.findMany({
-            where: { deletedAt: null },
+            where: { shopId: shop.id, deletedAt: null },
             select: {
                 id: true,
+                shopId: true,
                 firstName: true,
                 lastName: true,
                 email: true,
@@ -86,10 +94,12 @@ export class BarberService {
         const barber = await this.prisma.barber.findUnique({
             where: {
                 id: barberId,
+                shopId: admin.shopId,
                 deletedAt: null
             },
             select: {
                 id: true,
+                shopId: true,
                 firstName: true,
                 lastName: true,
                 email: true,

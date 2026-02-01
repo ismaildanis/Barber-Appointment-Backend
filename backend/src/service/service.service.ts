@@ -12,16 +12,23 @@ export class ServiceService {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
     try {
-      await this.prisma.service.create({data: dto})
+      await this.prisma.service.create({
+        data: {
+          ...dto, 
+          shopId: admin.shopId
+        }  
+      })
       return {message: 'Hizmet başarıyla oluşturuldu'}
     } catch (error) {
       throw new Error(error)
     }
   }
 
-  async findAll() {
+  async findAll(slug: string) {
+    const shop = await this.prisma.shop.findFirst({where: {slug: slug}})
+    if(!shop) throw new NotFoundException('Dukkan bulunamadı')
     const baseUrl = this.config.get<string>('APP_BASE_URL');
-    const services = await this.prisma.service.findMany({where: {deletedAt: null}})
+    const services = await this.prisma.service.findMany({where: {shopId: shop.id, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
 
     return services.map(b => ({
@@ -35,7 +42,7 @@ export class ServiceService {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId }})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
-    const service = await this.prisma.service.findUnique({where: {id: serviceId, deletedAt: null}})
+    const service = await this.prisma.service.findUnique({where: {id: serviceId, shopId: admin.shopId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     return {
       ...service,
@@ -47,7 +54,7 @@ export class ServiceService {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
-    const service = await this.prisma.service.findUnique({where: {id: serviceId, deletedAt: null}})
+    const service = await this.prisma.service.findUnique({where: {id: serviceId, shopId: admin.shopId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     
     try {
@@ -59,19 +66,15 @@ export class ServiceService {
       
   }
 
-  async uploadImage(adminId: number, serviceId: number, imageUrl: string) {
-    const admin = await this.prisma.admin.findUnique({
-        where: { id: adminId }
-    });
-
-    if (!admin) {
-        throw new UnauthorizedException("Admin bulunamadı");
-    }
-
-    const isImageExists = await this.prisma.service.findUnique({
-        where: { id: serviceId },
+  async uploadImage(shopId: number, serviceId: number, imageUrl: string) {
+    const isImageExists = await this.prisma.service.findFirst({
+        where: { id: serviceId, shopId: shopId },
         select: { image: true }
     });
+
+    if (!isImageExists) {
+        throw new NotFoundException("Hizmet bulunamadı");
+    }
 
     if (isImageExists?.image != null) {
         throw new ConflictException("Zaten bir resim bulunmakta");
@@ -107,7 +110,7 @@ export class ServiceService {
     if (!admin) throw new UnauthorizedException('Admin bulunamadı');
 
     const service = await this.prisma.service.findFirst({
-      where: { id: serviceId, deletedAt: null },
+      where: { id: serviceId, shopId: admin.shopId, deletedAt: null },
     });
     if (!service) throw new NotFoundException('Hizmet bulunamadı');
 

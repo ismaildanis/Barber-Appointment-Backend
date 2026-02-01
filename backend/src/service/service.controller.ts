@@ -18,9 +18,9 @@ export class ServiceController {
     return this.serviceService.create(req.admin!.sub, dto);
   }
 
-  @Get()
-  findAll(@Req() req: any) {
-    return this.serviceService.findAll();
+  @Get(':slug')
+  findAll(@Param('slug') slug: string) {
+    return this.serviceService.findAll(slug);
   }
 
   @Get(':id')
@@ -40,7 +40,7 @@ export class ServiceController {
       fs.mkdirSync(folder, { recursive: true });
       fs.writeFileSync(filePath, file.buffer);
 
-      return this.serviceService.uploadImage(req.admin.sub, serviceId, filePath);
+      return this.serviceService.uploadImage(req.admin.shopId, serviceId, filePath);
   }
 
   @Put('/image/:id')

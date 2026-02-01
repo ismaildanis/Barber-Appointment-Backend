@@ -294,7 +294,7 @@ export class AppointmentService {
       let appt;
       await this.prisma.$transaction(async (tx) => {
         appt = await tx.appointment.create({
-          data: { barberId: dto.barberId, customerId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate(), notes: dto.notes },
+          data: { barberId: dto.barberId, customerId, shopId: barber.shopId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate(), notes: dto.notes },
         });
         await tx.appointmentService.createMany({
           data: dto.serviceIds.map((id: number) => ({ appointmentId: appt.id, serviceId: id })),
