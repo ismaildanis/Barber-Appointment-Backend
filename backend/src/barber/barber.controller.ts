@@ -18,6 +18,12 @@ export class BarberController {
         return await this.barberService.create(dto, req.admin!.sub);
     }
 
+    @Get()
+    @UseGuards(JwtAdminGuard)
+    async findForAdmin(@Req() req: any) {
+        return await this.barberService.findForAdmin(req.admin.shopId);
+    }
+
     @Get(':slug')
     async findAllForShop(@Param('slug') slug: string) {
         return await this.barberService.findAllForShop(slug);

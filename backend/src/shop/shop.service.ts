@@ -19,7 +19,7 @@ export class ShopService {
             throw new ConflictException('Bu email kullanılıyor başka bir email deneyin.');
         }
 
-        const slug = this.uniqueSlug(dto.district, dto.neighborhood, dto.name)
+        const slug = this.createSlug(dto.district, dto.neighborhood, dto.name)
         const hashedPassword = await bcrypt.hash(dto.adminPassword, 12)
 
         return await this.prisma.$transaction(async (tx) => {
@@ -56,14 +56,14 @@ export class ShopService {
         const shops = await this.prisma.shop.findMany({where: {active: true}});
         return shops.map((shop) => ({
             ...shop,
-            image: shop.image ? `${process.env.APP_BASE_URL}/${shop.image}` : `${process.env.APP_BASE_URL}/${"uploads/shops/default-shop.png"}`
+            image: shop.image ? `${process.env.APP_BASE_URL}/${shop.image}` : `${process.env.APP_BASE_URL}/${"uploads/services/default-service.png"}`
         }));
     }
 
-    async activity(shopId: number) {
+    async activity(shopId: number, activity: boolean) {
         const shop = await this.prisma.shop.findUnique({where: {id: shopId}})
         if (!shop) throw new NotFoundException('İşletme bulunamadı')
-        return await this.prisma.shop.update({where: {id: shop.id}, data: {active: !shop.active}})
+        return await this.prisma.shop.update({where: {id: shop.id}, data: {active: activity}})
     }
 
     async uploadImage(shopId: number, imageUrl: string) {
@@ -110,17 +110,6 @@ export class ShopService {
 
             const slug = `${normalize(district)}-${normalize(neighborhood)}-${normalize(name)}`;
 
-        return slug
-    }
-
-    private uniqueSlug(district: string, neighborhood: string, name: string) {
-        const base = this.createSlug(district, neighborhood, name)
-        let slug = base
-        let i = 1
-
-        while (this.prisma.shop.findUnique({where: {slug: slug}})) {
-            slug = `${base}-${i++}`
-        }
         return slug
     }
 }

@@ -62,6 +62,32 @@ export class BarberService {
         }
     }
 
+    async findForAdmin(shopId: number) {
+        const shop = await this.prisma.shop.findFirst({ where: {id: shopId } })
+        if(!shop) {throw new UnauthorizedException("İşletme bulunamadı")}
+
+        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const barbers = await this.prisma.barber.findMany({
+            where: { shopId: shopId, deletedAt: null },
+            select: {
+                id: true,
+                shopId: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                active: true,
+                image: true
+            }
+        });
+        if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
+
+        return barbers.map(b => ({
+            ...b,
+            image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
+        }));
+    }
+
     async findAllForShop(slug: string) {
         const shop = await this.prisma.shop.findUnique({
             where: {

@@ -44,9 +44,33 @@ async function main() {
       duration: 60,
     },
     {
+      name: "VIP Saç Kesimi",
+      description: "Detaylı VIP saç kesimi ve bakım.",
+      price: 1000,
+      duration: 45,
+    },
+    {
       name: "VIP Sakal Kesimi",
       description: "Köpük, bakım ve ustura ile VIP sakal kesimi.",
       price: 500,
+      duration: 30,
+    },
+    {
+      name: "Modern Sakal Tıraşı",
+      description: "Modern çizim ve şekillendirme ile sakal tıraşı.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Saç Yıkama ve Fön",
+      description: "Saç yıkama, bakım ve profesyonel fön işlemi.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Usturayla Sakal Tıraşı",
+      description: "Klasik ustura tıraşı, sıcak havlu uygulamalı.",
+      price: 250,
       duration: 30,
     },
     {
@@ -56,10 +80,46 @@ async function main() {
       duration: 30,
     },
     {
-      name: "Saç Yıkama ve Fön",
-      description: "Saç yıkama ve profesyonel fön.",
+      name: "Anatomik Kaş Tasarımı",
+      description: "Profesyonel erkek kaş tasarımı.",
       price: 250,
+      duration: 15,
+    },
+    {
+      name: "Ense ve Favori Düzeltme",
+      description: "Ense ve favorilerin makine / ustura ile düzenlenmesi.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Ağda (Yanak - Kulak)",
+      description: "Yanak ve kulak bölgelerine ağda uygulaması.",
+      price: 250,
+      duration: 15,
+    },
+    {
+      name: "Saç Düzleştirici",
+      description: "Saç düzleştirme işlemi.",
+      price: 600,
       duration: 30,
+    },
+    {
+      name: "Saç Karbon Maskesi",
+      description: "Yağ ve kir temizleyen karbon saç maskesi.",
+      price: 500,
+      duration: 15,
+    },
+    {
+      name: "Saç Biotin ve Kolajen Maskesi",
+      description: "Biotin + kolajen ile saç güçlendirme bakımı.",
+      price: 500,
+      duration: 30,
+    },
+    {
+      name: "Saç Protein Maskesi",
+      description: "Yoğun protein saç maskesi.",
+      price: 500,
+      duration: 15,
     },
   ];
 

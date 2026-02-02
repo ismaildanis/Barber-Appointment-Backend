@@ -44,6 +44,7 @@ export class AppointmentService {
       
       const appts = await this.prisma.appointment.findMany({ 
         where: { 
+          shopId: admin.shopId,
           status, 
           appointmentStartAt: {
             gte: startOfDay,
@@ -53,7 +54,7 @@ export class AppointmentService {
         orderBy: { createdAt: 'desc' },  
         include: { 
           barber: {
-            select: { id: true, firstName: true, lastName: true },
+            select: { id: true, shopId: true ,firstName: true, lastName: true },
           },
           appointmentServices: {
             include: {

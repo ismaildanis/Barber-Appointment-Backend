@@ -46,7 +46,7 @@ export class ShopController {
 
   @Put('activity/:id')
   @UseGuards(JwtUnifiedGuard, PlatformGuard)
-  async activity(@Param('id') id: number) {
-    return await this.shopService.activity(id);
+  async activity(@Param('id') id: number, @Body() activity: boolean ) {
+    return await this.shopService.activity(id, activity);
   }
 }
