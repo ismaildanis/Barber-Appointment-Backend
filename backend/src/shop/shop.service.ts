@@ -54,10 +54,7 @@ export class ShopService {
 
     async findAll() {
         const shops = await this.prisma.shop.findMany({where: {active: true}});
-        return shops.map((shop) => ({
-            ...shop,
-            image: shop.image ? `${process.env.APP_BASE_URL}/${shop.image}` : `${process.env.APP_BASE_URL}/${"uploads/services/default-service.png"}`
-        }));
+        return shops
     }
 
     async activity(shopId: number, activity: boolean) {

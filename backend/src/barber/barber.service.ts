@@ -62,13 +62,13 @@ export class BarberService {
         }
     }
 
-    async findForAdmin(shopId: number) {
-        const shop = await this.prisma.shop.findFirst({ where: {id: shopId } })
-        if(!shop) {throw new UnauthorizedException("İşletme bulunamadı")}
+    async findForAdmin(adminId: number) {
+        const admin = await this.prisma.admin.findFirst({ where: {id: adminId } })
+        if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
 
         const baseUrl = this.config.get<string>('APP_BASE_URL');
         const barbers = await this.prisma.barber.findMany({
-            where: { shopId: shopId, deletedAt: null },
+            where: { shopId: admin.shopId, deletedAt: null },
             select: {
                 id: true,
                 shopId: true,

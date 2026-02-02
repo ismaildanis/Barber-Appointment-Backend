@@ -21,7 +21,7 @@ export class ServiceController {
   @Get()
   @UseGuards(JwtAdminGuard)
   async findAllForAdmin(@Req() req: any) {
-    return await this.serviceService.findAllForAdmin(req.admin.shopId);
+    return await this.serviceService.findAllForAdmin(req.admin!.sub);
   }
 
   @Get(':slug')

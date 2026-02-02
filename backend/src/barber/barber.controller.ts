@@ -21,7 +21,7 @@ export class BarberController {
     @Get()
     @UseGuards(JwtAdminGuard)
     async findForAdmin(@Req() req: any) {
-        return await this.barberService.findForAdmin(req.admin.shopId);
+        return await this.barberService.findForAdmin(req.admin.sub);
     }
 
     @Get(':slug')

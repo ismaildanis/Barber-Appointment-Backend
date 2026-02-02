@@ -29,12 +29,11 @@ export class ServiceService {
     }
   }
 
-  async findAllForAdmin(shopId: number) {
-    const shop = await this.prisma.shop.findFirst({where: {id: shopId}})
-    if(!shop) throw new NotFoundException('İşletme bulunamadı')
-    if(!shop.active) throw new ConflictException('İşletme aktif değil')
+  async findAllForAdmin(adminId: number) {
+    const admin = await this.prisma.admin.findFirst({where: {id: adminId}})
+    if(!admin) throw new NotFoundException('Admin bulunamadı')
     const baseUrl = this.config.get<string>('APP_BASE_URL');
-    const services = await this.prisma.service.findMany({where: {shopId: shopId, deletedAt: null}})
+    const services = await this.prisma.service.findMany({where: {shopId: admin.shopId, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
 
     return services.map(b => ({
@@ -50,7 +49,6 @@ export class ServiceService {
     const baseUrl = this.config.get<string>('APP_BASE_URL');
     const services = await this.prisma.service.findMany({where: {shopId: shop.id, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
-
     return services.map(b => ({
         ...b,
         image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
