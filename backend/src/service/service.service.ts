@@ -9,8 +9,10 @@ import { ConfigService } from '@nestjs/config';
 export class ServiceService {
   constructor(private prisma: PrismaService, private config: ConfigService) {}
   async create(adminId: number, dto: CreateServiceDto) {
-    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}, include: {shop: true}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+    if(!admin.shop.active) throw new ConflictException('İşletme aktif değil')
+
     try {
       await this.prisma.service.create({
         data: {
@@ -26,7 +28,8 @@ export class ServiceService {
 
   async findAll(slug: string) {
     const shop = await this.prisma.shop.findFirst({where: {slug: slug}})
-    if(!shop) throw new NotFoundException('Dukkan bulunamadı')
+    if(!shop) throw new NotFoundException('İşletme bulunamadı')
+    if(!shop.active) throw new ConflictException('İşletme aktif değil')
     const baseUrl = this.config.get<string>('APP_BASE_URL');
     const services = await this.prisma.service.findMany({where: {shopId: shop.id, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
@@ -51,8 +54,9 @@ export class ServiceService {
   }
 
   async update(adminId: number, serviceId: number, updateServiceDto: UpdateServiceDto) {
-    const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+    const admin = await this.prisma.admin.findUnique({where: {id: adminId}, include: {shop: {select: {active: true}}}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
+    if(!admin.shop.active) throw new ConflictException('İşletme aktif değil')
 
     const service = await this.prisma.service.findUnique({where: {id: serviceId, shopId: admin.shopId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
@@ -76,7 +80,7 @@ export class ServiceService {
         throw new NotFoundException("Hizmet bulunamadı");
     }
 
-    if (isImageExists?.image != null) {
+    if (isImageExists.image != null) {
         throw new ConflictException("Zaten bir resim bulunmakta");
     }
 

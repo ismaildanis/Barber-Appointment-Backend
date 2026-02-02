@@ -31,7 +31,7 @@ export class UnifiedAuthController {
     throw new UnauthorizedException('Email veya şifre yanlış');
   }
 
-  @Post('platform')
+  @Post('platform/login')
   @Throttle({ default: { limit: 5, ttl: 60 } })
   async platformLogin(@Body() body: { email: string; password: string }) {
     if (

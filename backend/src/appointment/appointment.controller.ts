@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put, Query, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Delete, Put, Query, BadRequestException } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';

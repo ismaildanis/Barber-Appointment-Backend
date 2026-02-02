@@ -260,11 +260,15 @@ export class AppointmentService {
     
     if (customerAppt) throw new ConflictException('Zaten randevunuz var');
 
-    const barber = await this.prisma.barber.findUnique({ where: { id: dto.barberId } });
+    const barber = await this.prisma.barber.findUnique({
+      where: { id: dto.barberId },
+      include: { shop: true },
+    });
+
     if (!barber) throw new NotFoundException('Berber bulunamadı');
-    if (!barber.active) {
-      throw new ConflictException('Bu berber şu anda aktif değildir ve randevu alamaz.');
-    }
+    if (!barber.active) throw new ConflictException('Bu berber şuanda aktif değil ve randevu alınamaz');
+    if (!barber.shop.active) throw new ConflictException('Bu işletme aktif değil');
+
     const allowedDates = await this.dateRangeService.getAvailableDates();
     const dateStr = dayjs(dto.appointmentStartAt).format('YYYY-MM-DD');
 
