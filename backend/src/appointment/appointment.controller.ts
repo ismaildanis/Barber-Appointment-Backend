@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Patch, Delete, Put, Query, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Req, Res, Param, ParseIntPipe, Delete, Put, Query, BadRequestException } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentService } from './appointment.service';
@@ -42,6 +42,7 @@ export class AppointmentController
     {
         return this.appointmentService.findForBarber(req.user!.sub, date) 
     }
+    
     @Get('barber-break')
     @UseGuards(JwtBarberGuard)
     getBreaks(@Req() req: any) {
@@ -64,8 +65,6 @@ export class AppointmentController
         return this.appointmentService.findOneForBarber(req.user!.sub, id)
     }
 
-
-    
     @Get('available-dates')
     @UseGuards(JwtAuthGuard)
 

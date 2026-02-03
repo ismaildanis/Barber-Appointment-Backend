@@ -63,6 +63,10 @@ export class AdminAuthService {
             refreshToken,
         }
     }
+
+    async create(dto){
+        
+    }
     
 
     async getMe(adminId: number){
@@ -179,8 +183,14 @@ export class AdminAuthService {
     }
 
     async tryLogin(dto: LoginDto) {
-        const admin = await this.prisma.admin.findUnique({ where: { email: dto.email }});
+        const admin = await this.prisma.admin.findUnique({ 
+            where: { email: dto.email }, 
+            include: { 
+                shop: {select: {active: true}} 
+            } 
+        });
         if (!admin) return null;
+        if (!admin.shop.active) return null;
 
         const ok = await bcrypt.compare(dto.password, admin.password);
         if (!ok) return null;

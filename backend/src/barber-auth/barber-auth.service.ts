@@ -200,11 +200,11 @@ export class BarberAuthService {
             accessToken,
             refreshToken,
             user: {
-            id: barber.id,
-            firstName: barber.firstName,
-            lastName: barber.lastName,
-            email: barber.email,
-            phone: barber.phone ?? null,
+                id: barber.id,
+                firstName: barber.firstName,
+                lastName: barber.lastName,
+                email: barber.email,
+                phone: barber.phone ?? null,
             },
         };
     }

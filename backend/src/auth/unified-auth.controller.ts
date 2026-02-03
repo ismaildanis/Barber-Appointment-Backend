@@ -6,7 +6,6 @@ import { AdminAuthService } from '../admin-auth/admin-auth.service';
 import { JwtUnifiedGuard } from './guards/jwt-unified.guard';
 import { JwtUnifiedRefreshGuard } from './guards/jwt-unified-refresh.guard';
 import { ForgotDto } from './dto/forgot.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -30,6 +29,33 @@ export class UnifiedAuthController {
     const admin = await this.adminAuth.tryLogin(dto);
     if (admin) return admin;
     throw new UnauthorizedException('Email veya şifre yanlış');
+  }
+
+  @Post('platform/login')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
+  async platformLogin(@Body() body: { email: string; password: string }) {
+    if (
+      body.email !== process.env.PLATFORM_EMAIL ||
+      body.password !== process.env.PLATFORM_PASSWORD
+    ) {
+      throw new UnauthorizedException('Yetkisiz');
+    }
+
+    const payload = {
+      sub: 0,
+      email: body.email,
+      role: 'platform',
+    };
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_SECRET!,
+      expiresIn: process.env.JWT_EXPIRES_IN!,
+    });
+ 
+    return { 
+      message: 'Giriş başarılı',
+      accessToken 
+    };
   }
  
   @UseGuards(JwtUnifiedGuard)
@@ -119,5 +145,6 @@ export class UnifiedAuthController {
     if (role === 'barber')   return await this.barberAuth.pushRegister(sub, dto);
     if (role === 'admin')    return await this.adminAuth.pushRegister(sub, dto);
   }
+
 }
 

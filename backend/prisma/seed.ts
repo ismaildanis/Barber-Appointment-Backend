@@ -1,28 +1,34 @@
-import { PrismaClient, Range } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Admin
-  const adminEmail = 'danisismail4573@gmail.com';
-  const adminPassword = await bcrypt.hash('Admin123!', 12);
-
-  await prisma.admin.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      firstName: 'Admin',
-      lastName: 'Admin',
-      email: adminEmail,
-      phone: null,
-      password: adminPassword,
-      refreshToken: null,
+  const shop = await prisma.shop.create({
+    data: {
+      slug: 'kadikoy-caferağa-ustura-barber',
+      name: 'Ustura Barber',
+      city: 'İstanbul',
+      district: 'Kadıköy',
+      neighborhood: 'Caferağa',
+      address: 'Caferağa Mah. Moda Cd. No:12',
+      phone: '5555555555',
+      email: 'danisismail4573@gmail.com',
     },
   });
-  
-  await prisma.appointment.deleteMany();
-  await prisma.service.deleteMany();
+
+  const adminPassword = await bcrypt.hash('Admin123!', 12);
+
+  await prisma.admin.create({
+    data: {
+      shopId: shop.id,
+      firstName: 'İsmail',
+      lastName: 'Danış',
+      email: 'danisismail4573@gmail.com',
+      phone: null,
+      password: adminPassword,
+    },
+  });
 
   const services = [
     {
@@ -53,13 +59,13 @@ async function main() {
       name: "Modern Sakal Tıraşı",
       description: "Modern çizim ve şekillendirme ile sakal tıraşı.",
       price: 250,
-      duration: 30,
+      duration: 15,
     },
     {
       name: "Saç Yıkama ve Fön",
       description: "Saç yıkama, bakım ve profesyonel fön işlemi.",
       price: 250,
-      duration: 30,
+      duration: 15,
     },
     {
       name: "Usturayla Sakal Tıraşı",
@@ -89,7 +95,7 @@ async function main() {
       name: "Ağda (Yanak - Kulak)",
       description: "Yanak ve kulak bölgelerine ağda uygulaması.",
       price: 250,
-      duration: 10,
+      duration: 15,
     },
     {
       name: "Saç Düzleştirici",
@@ -117,11 +123,15 @@ async function main() {
     },
   ];
 
-  await prisma.service.createMany({ data: services });
+  await prisma.service.createMany({
+    data: services.map((s) => ({
+      ...s,
+      shopId: shop.id,
+    })),
+  });
 
-  console.log("Services seeded successfully ✔");
+  console.log('✅ Shop, admin ve services başarıyla seed edildi');
 }
-
 
 main()
   .catch((e) => {

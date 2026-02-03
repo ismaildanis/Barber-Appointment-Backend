@@ -20,6 +20,11 @@ export class AdminAuthController {
     };
   }
 
+  @Post('create')
+  async create(@Body() dto: any) {
+    return await this.adminAuthService.create(dto)
+  }
+
   @Post('refresh')
   @UseGuards(JwtAdminRefreshGuard)
   async refresh(@Req() req) {

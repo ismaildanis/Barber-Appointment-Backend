@@ -14,25 +14,31 @@ export class ServiceController {
 
   @Post()
   @UseGuards(JwtAdminGuard)
-  create(@Body() dto: CreateServiceDto, @Req() req: any) {
-    return this.serviceService.create(req.admin!.sub, dto);
+  async create(@Body() dto: CreateServiceDto, @Req() req: any) {
+    return await this.serviceService.create(req.admin!.sub, dto);
   }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.serviceService.findAll();
+  @UseGuards(JwtAdminGuard)
+  async findAllForAdmin(@Req() req: any) {
+    return await this.serviceService.findAllForAdmin(req.admin!.sub);
+  }
+
+  @Get(':slug')
+  async findAll(@Param('slug') slug: string) {
+    return await this.serviceService.findAll(slug);
   }
 
   @Get(':id')
   @UseGuards(JwtAdminGuard)
-  findOne(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
-    return this.serviceService.findOne(req.admin!.sub, serviceId);
+  async findOne(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
+    return await this.serviceService.findOne(req.admin!.sub, serviceId);
   }
 
   @Post('/image/:id')
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
-  uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
       const fileName = `service-${Date.now()}.jpg`;
       const folder = `uploads/services`;
       const filePath = `${folder}/${fileName}`;
@@ -40,24 +46,24 @@ export class ServiceController {
       fs.mkdirSync(folder, { recursive: true });
       fs.writeFileSync(filePath, file.buffer);
 
-      return this.serviceService.uploadImage(req.admin.sub, serviceId, filePath);
+      return await this.serviceService.uploadImage(req.admin.shopId, serviceId, filePath);
   }
 
   @Put('/image/:id')
   @UseGuards(JwtAdminGuard)
-  deleteImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number) {
-      return this.serviceService.deleteImage(req.admin.sub, serviceId);
+  async deleteImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number) {
+      return await this.serviceService.deleteImage(req.admin.shopId, serviceId);
   }
 
   @Put(':id')
   @UseGuards(JwtAdminGuard)
-  update(@Param('id', ParseIntPipe) serviceId: number, @Body() dto: UpdateServiceDto, @Req() req: any) {
-    return this.serviceService.update(req.admin!.sub, serviceId, dto);
+  async update(@Param('id', ParseIntPipe) serviceId: number, @Body() dto: UpdateServiceDto, @Req() req: any) {
+    return await this.serviceService.update(req.admin!.sub, serviceId, dto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAdminGuard)
-  delete(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
-    return this.serviceService.delete(req.admin!.sub, serviceId);
+  async delete(@Param('id', ParseIntPipe) serviceId: number, @Req() req: any) {
+    return await this.serviceService.delete(req.admin!.shopId, serviceId);
   }
 }

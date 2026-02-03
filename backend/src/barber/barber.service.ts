@@ -18,12 +18,19 @@ export class BarberService {
         const admin = await this.prisma.admin.findUnique({
             where: {
                 id: adminId
+            },
+            include: {
+                shop: {
+                    select: {
+                        active: true
+                    }
+                }
             }
         })
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
-
-          const email = dto.email;
+        if(!admin.shop.active) {throw new ConflictException("İşletme aktif değil")}
+        const email = dto.email;
 
         const exists =
             (await this.prisma.customer.findUnique({ where: { email } })) ||
@@ -37,6 +44,7 @@ export class BarberService {
         try {
             const barber = await this.prisma.barber.create({
                 data: {
+                    shopId: admin.shopId,
                     firstName: dto.firstName,
                     lastName: dto.lastName,
                     email: dto.email,
@@ -54,12 +62,45 @@ export class BarberService {
         }
     }
 
-    async findAll() {
+    async findForAdmin(adminId: number) {
+        const admin = await this.prisma.admin.findFirst({ where: {id: adminId } })
+        if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
+
         const baseUrl = this.config.get<string>('APP_BASE_URL');
         const barbers = await this.prisma.barber.findMany({
-            where: { deletedAt: null },
+            where: { shopId: admin.shopId, deletedAt: null },
             select: {
                 id: true,
+                shopId: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                active: true,
+                image: true
+            }
+        });
+        if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
+
+        return barbers.map(b => ({
+            ...b,
+            image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
+        }));
+    }
+
+    async findAllForShop(slug: string) {
+        const shop = await this.prisma.shop.findUnique({
+            where: {
+                slug: slug
+            }
+        })
+        if(!shop) {throw new NotFoundException("İşletme bulunamadı")}
+        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const barbers = await this.prisma.barber.findMany({
+            where: { shopId: shop.id, deletedAt: null },
+            select: {
+                id: true,
+                shopId: true,
                 firstName: true,
                 lastName: true,
                 email: true,
@@ -86,10 +127,12 @@ export class BarberService {
         const barber = await this.prisma.barber.findUnique({
             where: {
                 id: barberId,
+                shopId: admin.shopId,
                 deletedAt: null
             },
             select: {
                 id: true,
+                shopId: true,
                 firstName: true,
                 lastName: true,
                 email: true,
@@ -108,10 +151,10 @@ export class BarberService {
     }
 
     async delete(adminId: number, barberId: number) {
-        const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
+        const admin = await this.prisma.admin.findUnique({ where: {id: adminId }, include: {shop: {select: {active: true}}}})
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
-
+        if(!admin.shop.active) {throw new ConflictException("İşletme aktif değil")}
         const barber = await this.prisma.barber.findUnique({
             where: {
                 deletedAt: null,

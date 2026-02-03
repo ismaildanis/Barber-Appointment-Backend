@@ -21,6 +21,8 @@ import { WorkingHourController } from './working-hour/working-hour.controller';
 import { WorkingHourModule } from './working-hour/working-hour.module';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomerModule } from './customer/customer.module';
+import { ShopModule } from './shop/shop.module';
+import { UnifiedAuthController } from './auth/unified-auth.controller';
 
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { CustomerModule } from './customer/customer.module';
     BarberAuthModule,
     HolidayModule,
     CustomerModule,
+    ShopModule,
   ],
   controllers: [AppController, BarberController, BarberAuthController, WorkingHourController],
   providers: [
