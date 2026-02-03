@@ -8,11 +8,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import * as fs from 'fs';
 import { UpdateShopDto } from './dto/update.dto';
+import { UploadService } from 'src/upload/upload.service';
 
 @Controller('shop')
 export class ShopController {
   constructor(
     private readonly shopService: ShopService,
+    private readonly uploadService: UploadService
   ) {}
   
   @Post()
@@ -42,13 +44,8 @@ export class ShopController {
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
-    const fileName = `${req.user.sub}-${Date.now()}.jpg`;
-    const folder = `uploads/shops`;
-    const filePath = `${folder}/${fileName}`;
-
-    fs.mkdirSync(folder, { recursive: true });
-    fs.writeFileSync(filePath, file.buffer);
-    return await this.shopService.uploadImage(req.user.sub, filePath);
+    const result = await this.uploadService.upload(file, "shops");
+    return await this.shopService.uploadImage(req.admin.sub, result.url);
   }
 
   @Put('image')

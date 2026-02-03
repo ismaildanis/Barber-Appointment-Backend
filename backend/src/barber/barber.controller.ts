@@ -7,10 +7,11 @@ import { ActivityBarberDto } from './dto/activity-barber.dto';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateBarberDto } from './dto/update-barber.dto';
+import { UploadService } from 'src/upload/upload.service';
 
 @Controller('barber')
 export class BarberController {
-    constructor(private barberService: BarberService) {}
+    constructor(private barberService: BarberService, private uploadService: UploadService) {}
 
     @Post()
     @UseGuards(JwtAdminGuard)
@@ -45,14 +46,8 @@ export class BarberController {
     @UseGuards(JwtBarberGuard)
     @UseInterceptors(FileInterceptor('file'))
     async uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
-        const fileName = `${req.barber.sub}-${Date.now()}.jpg`;
-        const folder = `uploads/barbers`;
-        const filePath = `${folder}/${fileName}`;
-
-        fs.mkdirSync(folder, { recursive: true });
-        fs.writeFileSync(filePath, file.buffer);
-
-        return await this.barberService.uploadImage(req.barber.sub, filePath);
+        const result = await this.uploadService.upload(file, "barbers");
+        return await this.barberService.uploadImage(req.barber.sub, result.url);
     }
 
     @Put('/image')

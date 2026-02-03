@@ -8,10 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import { UpdateBarberDto } from './dto/update-barber.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class BarberService {
-    constructor(private prisma: PrismaService, private config: ConfigService) {}
+    constructor(private prisma: PrismaService, private config: ConfigService, private uploadService: UploadService) {}
 
     async create(dto: CreateBarberDto, adminId: number) {
 
@@ -165,15 +166,20 @@ export class BarberService {
         });
 
         if(!barber) {throw new NotFoundException("Berber bulunamadı")}
-
-        await this.prisma.barber.update({
-            where: {
-                id: barberId, deletedAt: null
-            },
-            data: {
-                deletedAt: new Date()
+        
+        await this.prisma.$transaction(async (tx) => {
+            if (barber.image) {
+            await this.uploadService.delete(barber.image);
             }
-        })
+
+            await tx.barber.update({
+            where: { id: barberId },
+            data: {
+                deletedAt: new Date(),
+                image: null,
+            },
+            });
+        });
 
         return {
             message: "Berber başarıyla silindi"
@@ -221,62 +227,50 @@ export class BarberService {
 
     async uploadImage(barberId: number, imageUrl: string) {
         const barber = await this.prisma.barber.findUnique({
-            where: { id: barberId, deletedAt: null }
+            where: { id: barberId, deletedAt: null },
+            select: { image: true },
         });
 
         if (!barber) {
             throw new UnauthorizedException("Berber bulunamadı");
         }
 
-        
-        const isImageExists = await this.prisma.barber.findUnique({
-            where: { id: barberId, deletedAt: null },
-            select: { image: true }
-        });
-        
-        
-        if (isImageExists?.image != null) {
+        if (barber.image) {
             throw new ConflictException("Zaten bir resim bulunmakta");
         }
 
         await this.prisma.barber.update({
             where: { id: barberId, deletedAt: null },
-            data: { image: imageUrl }
+            data: { image: imageUrl },
         });
-        
-        return { message: "Resim başarıyla yüklendi" };
+
+        return { message: "Resim başarıyla yüklendi" };
     }
 
     async deleteImage(barberId: number) {
         const barber = await this.prisma.barber.findUnique({
-            where: { id: barberId, deletedAt: null }
+            where: { id: barberId, deletedAt: null },
+            select: { image: true },
         });
 
         if (!barber) {
             throw new UnauthorizedException("Berber bulunamadı");
         }
 
-        const image = barber.image;
-
-        if (image && !image.includes('default-barber.png')) {
-            const filePath = path.resolve(process.cwd(), image);
-            if (fs.existsSync(filePath)) {
-                try {
-                    fs.unlinkSync(filePath);
-                } catch (e) {
-                    console.warn('Dosya silinemedi:', e);
-                }
-            }
+        if (!barber.image) {
+            throw new NotFoundException("Berberin zaten resmi yok");
         }
+
+        await this.uploadService.delete(barber.image);
 
         await this.prisma.barber.update({
             where: { id: barberId, deletedAt: null },
-            data: { image: null }
+            data: { image: null },
         });
 
-
-        return { message: "Resim başarıyla silindi" };
+        return { message: "Resim başarıyla silindi" };
     }
+
 
     private handleUniqueError(e: unknown): never {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {

@@ -2,15 +2,16 @@ import { ConflictException, Injectable, NotFoundException, UnauthorizedException
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Multer } from 'multer';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
-import * as path from 'path';
-import { Service } from '@prisma/client';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class ServiceService {
-  constructor(private prisma: PrismaService, private config: ConfigService) {}
+  constructor(
+    private prisma: PrismaService, 
+    private config: ConfigService,
+    private uploadService: UploadService
+  ) {}
   async create(adminId: number, dto: CreateServiceDto) {
     const admin = await this.prisma.admin.findUnique({where: {id: adminId}, include: {shop: true}})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
@@ -95,7 +96,7 @@ export class ServiceService {
         throw new NotFoundException("Hizmet bulunamadı");
     }
 
-    if (isImageExists.image != null) {
+    if (isImageExists.image) {
         throw new ConflictException("Zaten bir resim bulunmakta");
     }
 
@@ -109,70 +110,53 @@ export class ServiceService {
 
   async deleteImage(shopId: number, serviceId: number) {
     const service = await this.prisma.service.findFirst({
-      where: { id: serviceId, shopId, image: { not: null } },
+      where: { id: serviceId, shopId },
       select: { image: true },
     });
 
     if (!service) {
-      throw new NotFoundException('Hizmet bulunamadı veya resim yok');
+      throw new NotFoundException("Hizmet bulunamadı");
     }
 
-    const updated = await this.prisma.service.updateMany({
-      where: {
-        id: serviceId,
-        shopId,
-        image: { not: null },
-      },
+    if (!service.image) {
+      throw new NotFoundException("Hizmetin zaten resmi yok");
+    }
+
+    await this.uploadService.delete(service.image);
+
+    await this.prisma.service.update({
+      where: { id: serviceId },
       data: { image: null },
     });
 
-    if (updated.count === 0) {
-      throw new ConflictException('Resim zaten silinmiş');
-    }
-
-    if (service.image) {
-      this.deleteFile(service.image);
-    }
-
-    return { message: 'Resim başarıyla silindi' };
+    return { message: "Resim başarıyla silindi" };
   }
+
 
   async delete(shopId: number, serviceId: number) {
     const service = await this.prisma.service.findFirst({
       where: { id: serviceId, shopId, deletedAt: null },
-      select: { image: true },
+      select: { id: true, image: true },
     });
 
     if (!service) {
       throw new NotFoundException('Hizmet bulunamadı');
     }
 
-    const updated = await this.prisma.service.updateMany({
-      where: { id: serviceId, shopId, deletedAt: null },
-      data: { deletedAt: new Date(), image: null },
+    await this.prisma.$transaction(async (tx) => {
+      if (service.image) {
+        await this.uploadService.delete(service.image);
+      }
+
+      await tx.service.update({
+        where: { id: serviceId },
+        data: {
+          deletedAt: new Date(),
+          image: null,
+        },
+      });
     });
 
-    if (updated.count === 0) {
-      throw new ConflictException('Hizmet zaten silinmiş');
-    }
-
-    if (service.image) {
-      this.deleteFile(service.image);
-    }
-
     return { message: 'Hizmet silindi' };
-  }
-
-  private deleteFile(serviceImage: string) {
-    if (serviceImage && !serviceImage.includes('default-service.png')) {
-        const filePath = path.resolve(process.cwd(), serviceImage);
-        if (fs.existsSync(filePath)) {
-            try {
-                fs.unlinkSync(filePath);
-            } catch (e) {
-                console.warn('Dosya silinemedi:', e);
-            }
-        }
-    }
   }
 }

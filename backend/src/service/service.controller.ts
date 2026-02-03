@@ -7,10 +7,11 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { UploadService } from 'src/upload/upload.service';
 
 @Controller('service')
 export class ServiceController {
-  constructor(private readonly serviceService: ServiceService, private readonly config: ConfigService) {}
+  constructor(private readonly serviceService: ServiceService, private readonly uploadService: UploadService) {}
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -39,14 +40,8 @@ export class ServiceController {
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
-      const fileName = `service-${Date.now()}.jpg`;
-      const folder = `uploads/services`;
-      const filePath = `${folder}/${fileName}`;
-
-      fs.mkdirSync(folder, { recursive: true });
-      fs.writeFileSync(filePath, file.buffer);
-
-      return await this.serviceService.uploadImage(req.admin.shopId, serviceId, filePath);
+      const result = await this.uploadService.upload(file, "services");
+      return await this.serviceService.uploadImage(req.admin.shopId, serviceId, result.url);
   }
 
   @Put('/image/:id')
