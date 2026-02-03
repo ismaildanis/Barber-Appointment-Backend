@@ -23,6 +23,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CustomerModule } from './customer/customer.module';
 import { ShopModule } from './shop/shop.module';
 import { UnifiedAuthController } from './auth/unified-auth.controller';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { UnifiedAuthController } from './auth/unified-auth.controller';
     HolidayModule,
     CustomerModule,
     ShopModule,
+    UploadModule
   ],
   controllers: [AppController, BarberController, BarberAuthController, WorkingHourController],
   providers: [
