@@ -42,6 +42,7 @@ export class AppointmentController
     {
         return this.appointmentService.findForBarber(req.user!.sub, date) 
     }
+    
     @Get('barber-break')
     @UseGuards(JwtBarberGuard)
     getBreaks(@Req() req: any) {
@@ -64,8 +65,6 @@ export class AppointmentController
         return this.appointmentService.findOneForBarber(req.user!.sub, id)
     }
 
-
-    
     @Get('available-dates')
     @UseGuards(JwtAuthGuard)
 

@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Appointment, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
 import { DateRangeService } from './date-range.service';
@@ -57,11 +57,7 @@ export class AppointmentService {
             select: { id: true, shopId: true ,firstName: true, lastName: true },
           },
           appointmentServices: {
-            include: {
-              service: {
-                select: { id: true, name: true, price: true, duration: true },
-              }
-            }
+            select: { id: true, serviceId: true, name: true, price: true, duration: true },
           },
           customer: {
             select: { id: true, firstName: true, lastName: true, phone: true, email: true }
@@ -81,11 +77,7 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true, price: true, duration: true },
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true },
         },
         customer: {
           select: { id: true, firstName: true, lastName: true, phone: true, email: true }
@@ -162,11 +154,10 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true },
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+        },
+        shop: {
+          select: { id: true, name: true },
         }
       }
     });
@@ -182,11 +173,10 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true },
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+        },
+        shop: {
+          select: { id: true, name: true },
         }
       }
     });
@@ -206,11 +196,10 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true },
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+        },
+        shop: {
+          select: { id: true, name: true },
         }
       },
     });
@@ -229,11 +218,10 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true },
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true },     
+        },
+        shop: {
+          select: { id: true, name: true },
         }
       },
     });
@@ -279,7 +267,7 @@ export class AppointmentService {
 
     const services = await this.prisma.service.findMany({
       where: { id: { in: dto.serviceIds } },
-      select: { duration: true },
+      select: { id: true, name: true, price: true, duration: true },
     });
 
     if (!services.length) throw new NotFoundException("Hizmet bulunamadı");
@@ -299,10 +287,23 @@ export class AppointmentService {
       let appt;
       await this.prisma.$transaction(async (tx) => {
         appt = await tx.appointment.create({
-          data: { barberId: dto.barberId, customerId, shopId: barber.shopId, appointmentStartAt: new Date(dto.appointmentStartAt), appointmentEndAt: apptEndAt.toDate(), notes: dto.notes },
+          data: { 
+            barberId: dto.barberId, 
+            customerId, 
+            shopId: barber.shopId, 
+            appointmentStartAt: new Date(dto.appointmentStartAt), 
+            appointmentEndAt: apptEndAt.toDate(), 
+            notes: dto.notes 
+          },
         });
         await tx.appointmentService.createMany({
-          data: dto.serviceIds.map((id: number) => ({ appointmentId: appt.id, serviceId: id })),
+          data: services.map((s) => ({ 
+            appointmentId: appt.id, 
+            serviceId: s.id, 
+            name: s.name,
+            price: s.price,
+            duration: s.duration
+          })),
         });
       });
 
@@ -433,11 +434,7 @@ export class AppointmentService {
       },  
       include: { 
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true }
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true }
         },
         customer: {
           select: { id: true, firstName: true, lastName: true, phone: true, email: true }
@@ -465,14 +462,9 @@ export class AppointmentService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      
       include: { 
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true }
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true }
         },
         customer: {
           select: { id: true, firstName: true, lastName: true }
@@ -502,11 +494,7 @@ export class AppointmentService {
       
       include: { 
         appointmentServices: {
-          include: {
-            service: {
-              select: { id: true, name: true }
-            }
-          }
+          select: { id: true, serviceId: true, name: true, price: true, duration: true }
         },
         customer: {
           select: { id: true, firstName: true, lastName: true }
