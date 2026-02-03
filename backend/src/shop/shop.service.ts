@@ -61,22 +61,22 @@ export class ShopService {
 
 
     async findAll() {
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
         const shops = await this.prisma.shop.findMany({where: {active: true}});
         return shops.map(s => ({
             ...s, 
-            image: s.image ? `${baseUrl}/${s.image}` : undefined}
-        ));
+            image: s.image ? s.image : defaultImage
+        }));
     }
 
     async findShopForAdmin(adminId: number) {
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
         const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
         if (!admin) throw new NotFoundException('Admin bulunamadı')
         const shop = await this.prisma.shop.findUnique({where: {id: admin.shopId}})
         return {
             ...shop,
-            image: shop?.image ? `${baseUrl}/${shop?.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
+            image: shop?.image ? shop.image : defaultImage
         }
     }
 

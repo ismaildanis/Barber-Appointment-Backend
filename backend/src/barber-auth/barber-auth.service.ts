@@ -133,7 +133,7 @@ export class BarberAuthService {
     }
 
     async getMe(barberId: number) {
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
         const barber = await this.prisma.barber.findUnique({
             where: {
                 id: barberId
@@ -150,7 +150,7 @@ export class BarberAuthService {
             firstName: barber.firstName,
             lastName: barber.lastName,
             phone: barber.phone ?? null,
-            image: barber.image ? `${baseUrl}/${barber.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`,
+            image: barber.image ? barber.image : defaultImage,
             role: "barber",
             active: barber.active
         }

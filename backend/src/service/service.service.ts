@@ -33,13 +33,13 @@ export class ServiceService {
   async findAllForAdmin(adminId: number) {
     const admin = await this.prisma.admin.findFirst({where: {id: adminId}})
     if(!admin) throw new NotFoundException('Admin bulunamadı')
-    const baseUrl = this.config.get<string>('APP_BASE_URL');
+    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
     const services = await this.prisma.service.findMany({where: {shopId: admin.shopId, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
 
     return services.map(b => ({
         ...b,
-        image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
+        image: b.image ? b.image : defaultImage
     }));
   }
 
@@ -47,17 +47,17 @@ export class ServiceService {
     const shop = await this.prisma.shop.findFirst({where: {slug: slug}})
     if(!shop) throw new NotFoundException('İşletme bulunamadı')
     if(!shop.active) throw new ConflictException('İşletme aktif değil')
-    const baseUrl = this.config.get<string>('APP_BASE_URL');
+    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
     const services = await this.prisma.service.findMany({where: {shopId: shop.id, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
-    return services.map(b => ({
-        ...b,
-        image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
+    return services.map(s => ({
+        ...s,
+        image: s.image ? s.image : defaultImage
     }));
   }
 
   async findOne(adminId: number, serviceId: number) {
-    const baseUrl = this.config.get<string>('APP_BASE_URL');
+    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
     const admin = await this.prisma.admin.findUnique({where: {id: adminId }})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
@@ -65,7 +65,7 @@ export class ServiceService {
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
     return {
       ...service,
-      image: service.image ? `${baseUrl}/${service.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
+      image: service.image ? service.image : defaultImage
     }
   }
 

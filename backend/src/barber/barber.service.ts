@@ -67,7 +67,7 @@ export class BarberService {
         const admin = await this.prisma.admin.findFirst({ where: {id: adminId } })
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
 
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
         const barbers = await this.prisma.barber.findMany({
             where: { shopId: admin.shopId, deletedAt: null },
             select: {
@@ -85,7 +85,7 @@ export class BarberService {
 
         return barbers.map(b => ({
             ...b,
-            image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
+            image: b.image ? b.image : defaultImage
         }));
     }
 
@@ -96,7 +96,7 @@ export class BarberService {
             }
         })
         if(!shop) {throw new NotFoundException("İşletme bulunamadı")}
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
         const barbers = await this.prisma.barber.findMany({
             where: { shopId: shop.id, deletedAt: null },
             select: {
@@ -111,18 +111,16 @@ export class BarberService {
             }
         });
         if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
-
-
         
        return barbers.map(b => ({
             ...b,
-            image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
+            image: b.image ? b.image : defaultImage
         }))
         
     }
 
     async findOne(adminId: number, barberId: number) {
-        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
         const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
@@ -149,7 +147,7 @@ export class BarberService {
 
         return {
             ...barber,
-            image: barber.image ? `${baseUrl}/${barber.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
+            image: barber.image ? barber.image : defaultImage
         }
     }
 
