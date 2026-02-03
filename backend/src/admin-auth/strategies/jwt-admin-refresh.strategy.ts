@@ -23,6 +23,6 @@ export class JwtAdminRefreshStrategy extends PassportStrategy(Strategy, 'jwt-adm
     const isMatch = await bcrypt.compare(requestToken, admin.refreshToken);
     if (!isMatch) throw new UnauthorizedException('Refresh token uyuşmuyor');
 
-    return { sub: admin.id, role: 'admin' };
+    return { sub: admin.id, role: 'admin', shopId: admin.shopId };
   }
 }

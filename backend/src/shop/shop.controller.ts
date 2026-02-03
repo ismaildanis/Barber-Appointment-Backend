@@ -7,6 +7,7 @@ import { JwtAdminGuard } from 'src/admin-auth/guards/jwt-admin-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import * as fs from 'fs';
+import { UpdateShopDto } from './dto/update.dto';
 
 @Controller('shop')
 export class ShopController {
@@ -25,6 +26,18 @@ export class ShopController {
     return await this.shopService.findAll();
   }
 
+  @Get('admin')
+  @UseGuards(JwtAdminGuard)
+  async findShopForAdmin(@Req() req: any) {
+    return await this.shopService.findShopForAdmin(req.admin.sub);
+  }
+
+  @Put('admin/:id')
+  @UseGuards(JwtAdminGuard)
+  async update(@Param('id') id: number, @Body() dto: UpdateShopDto) {
+    return await this.shopService.update(id, dto);
+  }
+
   @Post('image')
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
@@ -41,7 +54,7 @@ export class ShopController {
   @Put('image')
   @UseGuards(JwtAdminGuard)
   async deleteImage(@Req() req: any) {
-    return await this.shopService.deleteImage(req.admin.shopId);
+    return await this.shopService.deleteImage(req.admin!.shopId);
   }
 
   @Put('activity/:id')

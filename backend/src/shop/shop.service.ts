@@ -4,10 +4,12 @@ import { CreateShopDto } from './dto/create.dto';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UpdateShopDto } from './dto/update.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ShopService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService, private config: ConfigService) {}
 
     async create(dto: CreateShopDto) {
         const emailExists = await this.prisma.shop.findUnique({
@@ -52,9 +54,36 @@ export class ShopService {
 
     }
 
+
     async findAll() {
+        const baseUrl = this.config.get<string>('APP_BASE_URL');
         const shops = await this.prisma.shop.findMany({where: {active: true}});
-        return shops
+        return shops.map(s => ({
+            ...s, 
+            image: s.image ? `${baseUrl}/${s.image}` : undefined}
+        ));
+    }
+
+    async findShopForAdmin(adminId: number) {
+        const baseUrl = this.config.get<string>('APP_BASE_URL');
+        const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
+        if (!admin) throw new NotFoundException('Admin bulunamadı')
+        const shop = await this.prisma.shop.findUnique({where: {id: admin.shopId}})
+        return {
+            ...shop,
+            image: shop?.image ? `${baseUrl}/${shop?.image}` : `${baseUrl}/${"uploads/services/default-service.png"}`
+        }
+    }
+
+    async update(shopId: number, dto: UpdateShopDto) {
+        const shop = await this.prisma.shop.findUnique({where: {id: shopId}})
+        if (!shop) throw new NotFoundException('İşletme bulunamadı')
+        const district = dto.district ?? shop.district
+        const neighborhood = dto.neighborhood ?? shop.neighborhood
+        const name = dto.name ?? shop.name
+        const slug = this.createSlug(district, neighborhood, name)
+
+        return await this.prisma.shop.update({where: {id: shop.id}, data: {...dto, slug: slug}}) 
     }
 
     async activity(shopId: number, activity: boolean) {
@@ -64,7 +93,7 @@ export class ShopService {
     }
 
     async uploadImage(shopId: number, imageUrl: string) {
-        const shop = await this.prisma.shop.findUnique({where: {id: shopId}})
+        const shop = await this.prisma.shop.findUnique({where: {id: shopId}, select: {id: true, image: true}})
         if (!shop) throw new NotFoundException('İşletme bulunamadı')
         if (shop.image != null) {
             throw new ConflictException("Zaten bir resim bulunmakta");
@@ -77,6 +106,7 @@ export class ShopService {
         const shop = await this.prisma.shop.findUnique({where: {id: shopId}})
         if (!shop) throw new NotFoundException('İşletme bulunamadı')
         const image = shop.image
+        console.log(image);
         if (image == null) {
             throw new ConflictException("Zaten bir resim bulunmamaktadır");
         } else {
@@ -112,6 +142,7 @@ export class ShopService {
             .map(c => trMap[c] ?? c)
             .join('')
             .toLowerCase()
+            .toString()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9\s-]/g, '')
             .trim()

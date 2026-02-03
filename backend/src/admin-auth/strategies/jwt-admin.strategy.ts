@@ -17,6 +17,6 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
     if (payload.role !== 'admin') throw new UnauthorizedException();
     const admin = await this.prisma.admin.findUnique({ where: { id: payload.sub } });
     if (!admin) throw new UnauthorizedException();
-    return { sub: admin.id, role: 'admin', email: admin.email };
+    return { sub: admin.id, role: 'admin', email: admin.email, shopId: admin.shopId };
   }
 }
