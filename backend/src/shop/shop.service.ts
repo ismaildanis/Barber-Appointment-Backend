@@ -97,16 +97,26 @@ export class ShopService {
     }
 
     private createSlug(district: string, neighborhood: string, name: string) {
+        const trMap: Record<string, string> = {
+            'ç': 'c', 'Ç': 'c',
+            'ğ': 'g', 'Ğ': 'g',
+            'ı': 'i', 'İ': 'i',
+            'ö': 'o', 'Ö': 'o',
+            'ş': 's', 'Ş': 's',
+            'ü': 'u', 'Ü': 'u',
+        };
+
         const normalize = (s: string) =>
-        s
+            s
+            .split('')
+            .map(c => trMap[c] ?? c)
+            .join('')
             .toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9\s-]/g, '')
             .trim()
             .replace(/\s+/g, '-');
 
-            const slug = `${normalize(district)}-${normalize(neighborhood)}-${normalize(name)}`;
-
-        return slug
+        return `${normalize(district)}-${normalize(neighborhood)}-${normalize(name)}`;
     }
 }

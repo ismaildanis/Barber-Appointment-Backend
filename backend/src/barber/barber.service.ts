@@ -112,10 +112,12 @@ export class BarberService {
         if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
 
 
-        return barbers.map(b => ({
+        
+       return barbers.map(b => ({
             ...b,
             image: b.image ? `${baseUrl}/${b.image}` : `${baseUrl}/${"uploads/barbers/default-barber.png"}`
-        }));
+        }))
+        
     }
 
     async findOne(adminId: number, barberId: number) {
