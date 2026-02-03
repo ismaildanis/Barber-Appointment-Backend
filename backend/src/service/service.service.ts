@@ -75,7 +75,9 @@ export class ServiceService {
     if(!admin.shop.active) throw new ConflictException('İşletme aktif değil')
 
     const service = await this.prisma.service.findUnique({where: {id: serviceId, shopId: admin.shopId, deletedAt: null}})
-    if(!service) throw new NotFoundException('Hizmet bulunamadı')
+    if(!service) {
+      throw new NotFoundException('Hizmet bulunamadı')
+    }
     
     try {
       const result = await this.prisma.service.update({where: {id: serviceId}, data: updateServiceDto})
