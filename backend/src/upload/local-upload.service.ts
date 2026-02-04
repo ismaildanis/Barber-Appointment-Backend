@@ -8,8 +8,7 @@ export class LocalUploadService {
         const filename = `${Date.now()}-${file.originalname}`;
         fs.mkdirSync("uploads", { recursive: true });
         fs.writeFileSync(`uploads/${folder}/${filename}`, file.buffer);
-
-        return { url: `/uploads/${filename}` };
+        return { url: `/uploads/${folder}/${filename}` };
     }
     async delete(imageUrl: string) {
         const filePath = path.join(process.cwd(), imageUrl);

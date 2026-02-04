@@ -33,39 +33,58 @@ export class ServiceService {
   async findAllForAdmin(adminId: number) {
     const admin = await this.prisma.admin.findFirst({where: {id: adminId}})
     if(!admin) throw new NotFoundException('Admin bulunamadı')
-    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
+
+    const env = this.config.get<string>('NODE_ENV');
+    const baseUrl = this.config.get<string>('APP_BASE_URL');        
+    const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_SERVICE_IMAGE') : `${baseUrl}/uploads/services/default-service.png`;
+
     const services = await this.prisma.service.findMany({where: {shopId: admin.shopId, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
 
-    return services.map(b => ({
-        ...b,
-        image: b.image ? b.image : defaultImage
-    }));
+    return services.map(b => {
+        const image = env === 'production' ? b.image : `${baseUrl}${b.image}`;
+        return {
+            ...b,
+            image: b.image ? image : defaultImage
+        }
+    });
   }
 
   async findAll(slug: string) {
     const shop = await this.prisma.shop.findFirst({where: {slug: slug}})
     if(!shop) throw new NotFoundException('İşletme bulunamadı')
     if(!shop.active) throw new ConflictException('İşletme aktif değil')
-    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
+
+    const env = this.config.get<string>('NODE_ENV');
+    const baseUrl = this.config.get<string>('APP_BASE_URL');        
+    const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_SERVICE_IMAGE') : `${baseUrl}/uploads/services/default-service.png`;
+    
     const services = await this.prisma.service.findMany({where: {shopId: shop.id, deletedAt: null}})
     if(services.length == 0) throw new NotFoundException('Hizmetler bulunamadı')
-    return services.map(s => ({
-        ...s,
-        image: s.image ? s.image : defaultImage
-    }));
+    return services.map(b => {
+        const image = env === 'production' ? b.image : `${baseUrl}${b.image}`;
+        return {
+            ...b,
+            image: b.image ? image : defaultImage
+        }
+    });
   }
 
   async findOne(adminId: number, serviceId: number) {
-    const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
+
+    const env = this.config.get<string>('NODE_ENV');
+    const baseUrl = this.config.get<string>('APP_BASE_URL');        
+    const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_SERVICE_IMAGE') : `${baseUrl}/uploads/services/default-service.png`;
+    
     const admin = await this.prisma.admin.findUnique({where: {id: adminId }})
     if(!admin) throw new UnauthorizedException('Admin bulunamadı')
 
     const service = await this.prisma.service.findUnique({where: {id: serviceId, shopId: admin.shopId, deletedAt: null}})
     if(!service) throw new NotFoundException('Hizmet bulunamadı')
+    const image = env === 'production' ? service.image : `${baseUrl}${service.image}`
     return {
       ...service,
-      image: service.image ? service.image : defaultImage
+      image: service.image ? image : defaultImage
     }
   }
 

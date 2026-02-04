@@ -4,31 +4,31 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const shop = await prisma.shop.create({
-    data: {
-      slug: 'kadikoy-caferağa-ustura-barber',
-      name: 'Ustura Barber',
-      city: 'İstanbul',
-      district: 'Kadıköy',
-      neighborhood: 'Caferağa',
-      address: 'Caferağa Mah. Moda Cd. No:12',
-      phone: '5555555555',
-      email: 'danisismail4573@gmail.com',
-    },
-  });
+  // const shop = await prisma.shop.create({
+  //   data: {
+  //     slug: 'kadikoy-caferağa-ustura-barber',
+  //     name: 'Ustura Barber',
+  //     city: 'İstanbul',
+  //     district: 'Kadıköy',
+  //     neighborhood: 'Caferağa',
+  //     address: 'Caferağa Mah. Moda Cd. No:12',
+  //     phone: '5555555555',
+  //     email: 'danisismail4573@gmail.com',
+  //   },
+  // });
 
-  const adminPassword = await bcrypt.hash('Admin123!', 12);
+  // const adminPassword = await bcrypt.hash('Admin123!', 12);
 
-  await prisma.admin.create({
-    data: {
-      shopId: shop.id,
-      firstName: 'İsmail',
-      lastName: 'Danış',
-      email: 'danisismail4573@gmail.com',
-      phone: null,
-      password: adminPassword,
-    },
-  });
+  // await prisma.admin.create({
+  //   data: {
+  //     shopId: shop.id,
+  //     firstName: 'İsmail',
+  //     lastName: 'Danış',
+  //     email: 'danisismail4573@gmail.com',
+  //     phone: null,
+  //     password: adminPassword,
+  //   },
+  // });
 
   const services = [
     {
@@ -126,7 +126,7 @@ async function main() {
   await prisma.service.createMany({
     data: services.map((s) => ({
       ...s,
-      shopId: shop.id,
+      shopId: 2,
     })),
   });
 
