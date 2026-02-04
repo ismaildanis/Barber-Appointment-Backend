@@ -9,6 +9,7 @@ import { memoryStorage } from 'multer';
 import * as fs from 'fs';
 import { UpdateShopDto } from './dto/update.dto';
 import { UploadService } from 'src/upload/upload.service';
+import { ActivityDto } from './dto/activity.dto';
 
 @Controller('shop')
 export class ShopController {
@@ -55,7 +56,7 @@ export class ShopController {
 
   @Put('activity/:id')
   @UseGuards(JwtUnifiedGuard, PlatformGuard)
-  async activity(@Param('id') id: number, @Body() activity: boolean ) {
-    return await this.shopService.activity(id, activity);
+  async activity(@Param('id') id: number, @Body() dto: ActivityDto ) {
+    return await this.shopService.activity(id, dto);
   }
 }

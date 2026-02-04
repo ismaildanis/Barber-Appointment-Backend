@@ -133,7 +133,11 @@ export class BarberAuthService {
     }
 
     async getMe(barberId: number) {
-        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
+
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_BARBER_IMAGE') : `${baseUrl}/uploads/barbers/default-barber.png`;
+        
         const barber = await this.prisma.barber.findUnique({
             where: {
                 id: barberId
@@ -143,14 +147,14 @@ export class BarberAuthService {
         if(!barber) {
             throw new UnauthorizedException("Kullanıcı bulunamadı")
         }
-
+        const image = env === 'production' ? barber.image : `${baseUrl}${barber.image}`;
         return {
             id: barber.id,
             email: barber.email,
             firstName: barber.firstName,
             lastName: barber.lastName,
             phone: barber.phone ?? null,
-            image: barber.image ? barber.image : defaultImage,
+            image: barber.image ? image : defaultImage,
             role: "barber",
             active: barber.active
         }

@@ -7,6 +7,7 @@ import * as path from 'path';
 import { UpdateShopDto } from './dto/update.dto';
 import { ConfigService } from '@nestjs/config';
 import { UploadService } from 'src/upload/upload.service';
+import { ActivityDto } from './dto/activity.dto';
 
 @Injectable()
 export class ShopService {
@@ -61,22 +62,32 @@ export class ShopService {
 
 
     async findAll() {
-        const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_SERVICE_IMAGE') : null;
+        
         const shops = await this.prisma.shop.findMany({where: {active: true}});
-        return shops.map(s => ({
-            ...s, 
-            image: s.image ? s.image : defaultImage
-        }));
+        
+        return shops.map(s => {
+            const image = env === 'production' ? s.image : `${baseUrl}${s.image}`;
+            return {
+                ...s,
+                image: s.image ? image : defaultImage
+            }
+        })
     }
 
     async findShopForAdmin(adminId: number) {
-        const defaultImage = this.config.get<string>('DEFAULT_SERVICE_IMAGE');
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_SERVICE_IMAGE') : `${baseUrl}/uploads/services/default-service.png`;
         const admin = await this.prisma.admin.findUnique({where: {id: adminId}})
         if (!admin) throw new NotFoundException('Admin bulunamadı')
         const shop = await this.prisma.shop.findUnique({where: {id: admin.shopId}})
+        const image = env === 'production' ? shop?.image : `${baseUrl}${shop?.image}`;
         return {
             ...shop,
-            image: shop?.image ? shop.image : defaultImage
+            image: shop?.image ? image : defaultImage
         }
     }
 
@@ -93,10 +104,10 @@ export class ShopService {
         return await this.prisma.shop.update({where: {id: shop.id}, data: {...dto, slug: slug}}) 
     }
 
-    async activity(shopId: number, activity: boolean) {
+    async activity(shopId: number, dto: ActivityDto) {
         const shop = await this.prisma.shop.findUnique({where: {id: shopId}})
         if (!shop) throw new NotFoundException('İşletme bulunamadı')
-        return await this.prisma.shop.update({where: {id: shop.id}, data: {active: activity}})
+        return await this.prisma.shop.update({where: {id: shop.id}, data: {active: dto.active}})
     }
 
     async uploadImage(shopId: number, file: Express.Multer.File) {
@@ -107,7 +118,7 @@ export class ShopService {
             throw new ConflictException("Zaten bir resim bulunmakta");
         }
         const result = await this.uploadService.upload(file, "shops", `shop-${shopId}`);
-
+        
         await this.prisma.shop.update({where: {id: shop.id, active: true}, data: {image: result.url}})
         return { message: "Resim başarıyla yüklendi" };
     }

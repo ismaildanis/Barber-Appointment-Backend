@@ -67,7 +67,10 @@ export class BarberService {
         const admin = await this.prisma.admin.findFirst({ where: {id: adminId } })
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
 
-        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_BARBER_IMAGE') : `${baseUrl}/uploads/barbers/default-barber.png`;
+        
         const barbers = await this.prisma.barber.findMany({
             where: { shopId: admin.shopId, deletedAt: null },
             select: {
@@ -83,10 +86,13 @@ export class BarberService {
         });
         if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
 
-        return barbers.map(b => ({
-            ...b,
-            image: b.image ? b.image : defaultImage
-        }));
+        return barbers.map(b => {
+            const image = env === 'production' ? b.image : `${baseUrl}${b.image}`
+            return {
+                ...b,
+                image: b.image ? image : defaultImage
+            }
+        });
     }
 
     async findAllForShop(slug: string) {
@@ -96,7 +102,11 @@ export class BarberService {
             }
         })
         if(!shop) {throw new NotFoundException("İşletme bulunamadı")}
-        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
+        
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_BARBER_IMAGE') : `${baseUrl}/uploads/barbers/default-barber.png`;
+        
         const barbers = await this.prisma.barber.findMany({
             where: { shopId: shop.id, deletedAt: null },
             select: {
@@ -112,15 +122,21 @@ export class BarberService {
         });
         if(barbers.length == 0) {throw new NotFoundException("Berber bulunamadı")}
         
-       return barbers.map(b => ({
-            ...b,
-            image: b.image ? b.image : defaultImage
-        }))
+       return barbers.map(b => {
+            const image = env === 'production' ? b.image : `${baseUrl}${b.image}`
+            return {
+                ...b,
+                image: b.image ? image : defaultImage
+            }
+       })
         
     }
 
     async findOne(adminId: number, barberId: number) {
-        const defaultImage = this.config.get<string>('DEFAULT_BARBER_IMAGE');
+        const env = this.config.get<string>('NODE_ENV');
+        const baseUrl = this.config.get<string>('APP_BASE_URL');        
+        const defaultImage = env === 'production' ? this.config.get<string>('DEFAULT_BARBER_IMAGE') : `${baseUrl}/uploads/barbers/default-barber.png`;
+        
         const admin = await this.prisma.admin.findUnique({ where: {id: adminId } })
 
         if(!admin) {throw new UnauthorizedException("Admin bulunamadı")}
@@ -144,10 +160,10 @@ export class BarberService {
         });
 
         if(!barber) {throw new NotFoundException("Berber bulunamadı")}
-
+        const image = env === 'production' ? barber.image : `${baseUrl}${barber.image}`
         return {
             ...barber,
-            image: barber.image ? barber.image : defaultImage
+            image: barber.image ? image : defaultImage
         }
     }
 

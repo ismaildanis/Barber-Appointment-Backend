@@ -122,10 +122,17 @@ export class AdminAuthService {
     async refreshTokens(adminId: number) {
         const admin = await this.prisma.admin.findUnique({
             where: { id: adminId },
+            include: { 
+                shop: {select: {active: true}} 
+            },
         });
 
         if (!admin || !admin.refreshToken) {
             throw new UnauthorizedException('Refresh token bulunamadı');
+        }
+
+        if (admin.shop.active == false) {
+            throw new UnauthorizedException('İşletme aktif degil');
         }
 
         const accessToken = await this.jwt.signAsync(

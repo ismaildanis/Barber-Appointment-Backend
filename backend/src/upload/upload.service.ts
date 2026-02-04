@@ -17,7 +17,7 @@ export class UploadService {
       if (provider === "cloudinary") {
         return this.cloudinary.upload(file, folder, publicId);
       }
-
+      
       return this.local.upload(file, folder);
     }
     delete(imageUrl: string, publicId: string, folder: "barbers" | "services" | "shops") {
