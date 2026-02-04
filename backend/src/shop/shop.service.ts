@@ -99,15 +99,17 @@ export class ShopService {
         return await this.prisma.shop.update({where: {id: shop.id}, data: {active: activity}})
     }
 
-    async uploadImage(shopId: number, imageUrl: string) {
+    async uploadImage(shopId: number, file: Express.Multer.File) {
         const shop = await this.prisma.shop.findUnique({where: {id: shopId}, select: {id: true, image: true}})
         if (!shop) throw new NotFoundException('İşletme bulunamadı')
 
         if (shop.image) {
             throw new ConflictException("Zaten bir resim bulunmakta");
         }
-        await this.prisma.shop.update({where: {id: shop.id, active: true}, data: {image: imageUrl}})
-        return { message: "Resim başarıyla yüklendi" };
+        const result = await this.uploadService.upload(file, "shops", `shop-${shopId}`);
+
+        await this.prisma.shop.update({where: {id: shop.id, active: true}, data: {image: result.url}})
+        return { message: "Resim başarıyla yüklendi" };
     }
 
     async deleteImage(shopId: number) {
@@ -119,11 +121,11 @@ export class ShopService {
             throw new NotFoundException("İşletmenin zaten resmi yok");
         }
 
-        await this.uploadService.delete(shop.image);
+        await this.uploadService.delete(shop.image, `shop-${shopId}`, "shops");
 
         await this.prisma.shop.update({where: {id: shop.id}, data: {image: null}})
 
-        return { message: "Resim başarıyla silindi" };
+        return { message: "Resim başarıyla silindi" };
         
     }
 

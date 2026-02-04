@@ -3,12 +3,14 @@ import cloudinary from "./cloudinary.config";
 
 @Injectable()
 export class CloudinaryUploadService {
-    async upload(file: Express.Multer.File, folder: string) {
+    async upload(file: Express.Multer.File, folder: string, publicId: string) {
         return new Promise<{ url: string }>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
             {
-            folder: `berber-randevum/${folder}`,
-            resource_type: "image",
+                folder: `berber-randevum/${folder}`,
+                public_id: publicId,
+                overwrite: true,
+                resource_type: "image",
             },
             (error, result) => {
                 if (error) return reject(error);
@@ -23,12 +25,8 @@ export class CloudinaryUploadService {
         });
     }
 
-    async deleteByUrl(imageUrl: string) {
-        const parts = imageUrl.split("/");
-        const filename = parts.pop();
-        const folder = parts.slice(parts.indexOf("upload") + 1, parts.length - 1).join("/");
-        const publicId = `${folder}/${filename?.split(".")[0]}`;
-
-        await cloudinary.uploader.destroy(publicId);
+    async deleteByUrl(folder: string, publicId: string) {
+        const fullPublicId = `berber-randevum/${folder}/${publicId}`;
+        return await cloudinary.uploader.destroy(fullPublicId);
     }
 }

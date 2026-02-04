@@ -46,8 +46,7 @@ export class BarberController {
     @UseGuards(JwtBarberGuard)
     @UseInterceptors(FileInterceptor('file'))
     async uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
-        const result = await this.uploadService.upload(file, "barbers");
-        return await this.barberService.uploadImage(req.barber.sub, result.url);
+        return await this.barberService.uploadImage(req.barber.sub, file);
     }
 
     @Put('/image')

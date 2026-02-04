@@ -40,8 +40,7 @@ export class ServiceController {
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadImage(@Req() req: any, @Param('id', ParseIntPipe) serviceId: number, @UploadedFile() file: Express.Multer.File) {
-      const result = await this.uploadService.upload(file, "services");
-      return await this.serviceService.uploadImage(req.admin.shopId, serviceId, result.url);
+      return await this.serviceService.uploadImage(req.admin.shopId, serviceId, file);
   }
 
   @Put('/image/:id')

@@ -167,15 +167,15 @@ export class BarberService {
         
         await this.prisma.$transaction(async (tx) => {
             if (barber.image) {
-            await this.uploadService.delete(barber.image);
+                await this.uploadService.delete(barber.image, `barber-${barberId}`, "barbers");
             }
 
             await tx.barber.update({
-            where: { id: barberId },
-            data: {
-                deletedAt: new Date(),
-                image: null,
-            },
+                where: { id: barberId },
+                data: {
+                    deletedAt: new Date(),
+                    image: null,
+                },
             });
         });
 
@@ -223,7 +223,7 @@ export class BarberService {
         }
     }
 
-    async uploadImage(barberId: number, imageUrl: string) {
+    async uploadImage(barberId: number, file: Express.Multer.File) {
         const barber = await this.prisma.barber.findUnique({
             where: { id: barberId, deletedAt: null },
             select: { image: true },
@@ -237,9 +237,11 @@ export class BarberService {
             throw new ConflictException("Zaten bir resim bulunmakta");
         }
 
+        const result = await this.uploadService.upload(file, "barbers", `barber-${barberId}`);
+
         await this.prisma.barber.update({
             where: { id: barberId, deletedAt: null },
-            data: { image: imageUrl },
+            data: { image: result.url },
         });
 
         return { message: "Resim başarıyla yüklendi" };
@@ -259,7 +261,7 @@ export class BarberService {
             throw new NotFoundException("Berberin zaten resmi yok");
         }
 
-        await this.uploadService.delete(barber.image);
+        await this.uploadService.delete(barber.image, `barber-${barberId}`, "barbers");
 
         await this.prisma.barber.update({
             where: { id: barberId, deletedAt: null },

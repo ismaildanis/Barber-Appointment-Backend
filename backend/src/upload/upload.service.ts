@@ -11,20 +11,20 @@ export class UploadService {
       private readonly config: ConfigService,
     ) {}
 
-    upload(file: Express.Multer.File, folder: "barbers" | "services" | "shops" ) {
+    upload(file: Express.Multer.File, folder: "barbers" | "services" | "shops", publicId: string) {
       const provider = this.config.get<string>("UPLOAD_PROVIDER");
 
       if (provider === "cloudinary") {
-        return this.cloudinary.upload(file, folder);
+        return this.cloudinary.upload(file, folder, publicId);
       }
 
       return this.local.upload(file, folder);
     }
-    delete(imageUrl: string) {
+    delete(imageUrl: string, publicId: string, folder: "barbers" | "services" | "shops") {
       const provider = this.config.get<string>("UPLOAD_PROVIDER");
 
       if (provider === "cloudinary") {
-        return this.cloudinary.deleteByUrl(imageUrl);
+        return this.cloudinary.deleteByUrl(folder, publicId);
       }
 
       return this.local.delete(imageUrl);

@@ -88,7 +88,7 @@ export class ServiceService {
       
   }
 
-  async uploadImage(shopId: number, serviceId: number, imageUrl: string) {
+  async uploadImage(shopId: number, serviceId: number, file: Express.Multer.File) {
     const isImageExists = await this.prisma.service.findFirst({
         where: { id: serviceId, shopId: shopId },
         select: { image: true }
@@ -101,10 +101,11 @@ export class ServiceService {
     if (isImageExists.image) {
         throw new ConflictException("Zaten bir resim bulunmakta");
     }
+    const result = await this.uploadService.upload(file, "services", `service-${serviceId}`);
 
     await this.prisma.service.update({
         where: { id: serviceId },
-        data: { image: imageUrl }
+        data: { image: result.url }
     });
 
     return { message: "Resim başarıyla yüklendi" };
@@ -124,7 +125,7 @@ export class ServiceService {
       throw new NotFoundException("Hizmetin zaten resmi yok");
     }
 
-    await this.uploadService.delete(service.image);
+    await this.uploadService.delete(service.image, `service-${serviceId}`, "services");
 
     await this.prisma.service.update({
       where: { id: serviceId },
@@ -147,7 +148,7 @@ export class ServiceService {
 
     await this.prisma.$transaction(async (tx) => {
       if (service.image) {
-        await this.uploadService.delete(service.image);
+        await this.uploadService.delete(service.image, `service-${serviceId}`, "services");
       }
 
       await tx.service.update({

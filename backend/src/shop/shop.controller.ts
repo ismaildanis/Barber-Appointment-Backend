@@ -44,8 +44,7 @@ export class ShopController {
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadImage(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
-    const result = await this.uploadService.upload(file, "shops");
-    return await this.shopService.uploadImage(req.admin.sub, result.url);
+    return await this.shopService.uploadImage(req.admin.sub, file);
   }
 
   @Put('image')
