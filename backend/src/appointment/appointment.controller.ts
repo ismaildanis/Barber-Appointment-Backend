@@ -66,21 +66,18 @@ export class AppointmentController
     }
 
     @Get('available-dates')
-    @UseGuards(JwtAuthGuard)
-
-    getAvailableDates(@Req() req: any)
+    getAvailableDates()
     {
-        return this.appointmentService.getAvailableDates(req.user!.sub)
+        return this.appointmentService.getAvailableDates()
     }
 
     @Get('available-hours/:barberId')
-    @UseGuards(JwtAuthGuard)
-    getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string, @Req() req: any)
+    getAvailableHours(@Param('barberId', ParseIntPipe) barberId: number, @Query('date') date: string)
     {
         if (!date) {
             throw new BadRequestException('Tarih zorunludur.');
         }
-        return this.appointmentService.getAvailableHours(req.customer!.sub, barberId, date)
+        return this.appointmentService.getAvailableHours(barberId, date)
     }
 
     @Get('last')
