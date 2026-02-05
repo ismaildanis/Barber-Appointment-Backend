@@ -397,16 +397,11 @@ export class AppointmentService {
     return { message: 'Randevu iptal edildi', result};
   }
 
-  async getAvailableDates(customerId: number) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
+  async getAvailableDates() {
     return await this.dateRangeService.getAvailableDates();
   }
 
-  async getAvailableHours(customerId: number, barberId: number, date: string) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    
-    if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
+  async getAvailableHours(barberId: number, date: string) {
     const strictDate = dayjs(date, "YYYY-MM-DD", true);
     if (!strictDate.isValid()) {
         throw new BadRequestException("Geçersiz bir tarih girdiniz.");
