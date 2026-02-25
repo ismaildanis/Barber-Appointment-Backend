@@ -24,6 +24,9 @@ import { CustomerModule } from './customer/customer.module';
 import { ShopModule } from './shop/shop.module';
 import { UnifiedAuthController } from './auth/unified-auth.controller';
 import { UploadModule } from './upload/upload.module';
+import { CampaignModule } from './campaign/campaign.module';
+import { GameModule } from './game/game.module';
+import { RewardModule } from './reward/reward.module';
 
 @Module({
   imports: [
@@ -50,7 +53,10 @@ import { UploadModule } from './upload/upload.module';
     HolidayModule,
     CustomerModule,
     ShopModule,
-    UploadModule
+    UploadModule,
+    CampaignModule,
+    GameModule,
+    RewardModule
   ],
   controllers: [AppController, BarberController, BarberAuthController, WorkingHourController],
   providers: [
