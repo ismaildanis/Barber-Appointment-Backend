@@ -164,4 +164,15 @@ export class ShopService {
 
         return `${normalize(district)}-${normalize(neighborhood)}-${normalize(name)}`;
     }
+
+    public async checkShop(shopId?: number, slug?: string) {
+        const shop = shopId ? 
+        await this.prisma.shop.findUnique({ where: { id: shopId } }) : 
+        await this.prisma.shop.findFirst({ where: { slug } });
+
+        if (!shop) throw new NotFoundException('İşletme bulunamadı');
+        if (!shop.active) throw new ConflictException('İşletme aktif değil');
+
+        return shop
+    }
 }

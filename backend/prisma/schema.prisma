@@ -230,13 +230,12 @@ model GameSession {
   shopId    Int
   customerId Int
   gameType  GameType 
-  weekKey   String 
   playedAt  DateTime
 
   shop Shop @relation(fields: [shopId], references: [id])
   customer Customer @relation(fields: [customerId], references: [id])
 
-  @@unique([shopId, customerId, gameType, weekKey])
+  @@unique([shopId, customerId, gameType])
   @@index([shopId, customerId, playedAt])
 }
 

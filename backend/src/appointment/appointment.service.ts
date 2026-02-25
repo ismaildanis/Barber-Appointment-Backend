@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Appointment, Prisma } from '@prisma/client';
+import { Appointment, DiscountType, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
 import { DateRangeService } from './date-range.service';
@@ -17,6 +17,8 @@ const expo = new Expo();
 import dayjs = require('dayjs');
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { PreviewAppointmentDto } from './dto/preview-appointment.dto';
+import { RewardService } from 'src/reward/reward.service';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -31,7 +33,8 @@ export class AppointmentService {
       private work: WorkingHourValidator,
       private timeRange: TimeRangeValidator,
       private workinHours: WorkingHourService,
-      private push: PushService
+      private push: PushService,
+      private reward: RewardService
   ) {}
 
 
@@ -413,6 +416,54 @@ export class AppointmentService {
       allHours,
       busyHours,
     }
+  }
+
+  async preview(dto: PreviewAppointmentDto, customerId: number) {
+
+    const reward = await this.reward.getReward(customerId, dto.shopSlug, dto.rewardId);
+    const campaign = reward.campaign
+    const campaignServices = reward.campaign.campaignServices.map((cs) => cs.serviceId);
+
+    const selectedServices = await this.prisma.service.findMany({
+      where: { id: { in: dto.serviceIds } },
+      select: { id: true, name: true, price: true, duration: true },
+    });
+    if (!selectedServices.length) throw new NotFoundException("Hizmet bulunamadı");
+    if (selectedServices.length !== dto.serviceIds.length) throw new NotFoundException("Bazı hizmetler yok");
+
+    let eligibilityServices: number[] = [];
+    for (const id of dto.serviceIds) {
+      if(campaignServices.includes(id)) {
+        eligibilityServices.push(id)
+      }
+    }
+    
+    const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration, 0);
+    const totalPrice = selectedServices.reduce((acc, s) => acc.plus(s.price), new Prisma.Decimal(0));
+    const eligibilityServicesPrice = selectedServices
+      .filter((s) => eligibilityServices.includes(s.id))
+      .reduce((acc, s) => acc.plus(s.price), new Prisma.Decimal(0));
+    const discountType = reward.campaign.discountType;
+    const discount = reward.campaign.discountValue ?? new Prisma.Decimal(0);;
+
+    let totalDiscount; 
+    if (discountType == 'PERCENTAGE') {
+      totalDiscount = eligibilityServicesPrice.mul(discount).div(100);
+    } 
+    else if (discountType == 'FIXED_AMOUNT') {
+      totalDiscount = Prisma.Decimal.min(discount, eligibilityServicesPrice);
+    }
+
+    const newPrice = Prisma.Decimal.max(totalPrice.minus(totalDiscount), new Prisma.Decimal(0));
+
+    return {
+      campaign,
+      totalPrice,
+      newPrice,
+      totalDiscount,
+      totalDuration,
+    }
+
   }
 
   async findOneForBarber(barberId: number, appointmentId: number) {

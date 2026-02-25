@@ -2,10 +2,10 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { DiscountType } from '@prisma/client';
 import dayjs = require('dayjs');
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { DiscountType } from '@prisma/client';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -76,6 +76,8 @@ export class CampaignService {
         active: true
       }
     })
+
+    if (!campaigns.length) throw new NotFoundException('Kampanya bulunamadı');
 
     return campaigns
   }
@@ -159,7 +161,7 @@ export class CampaignService {
     }
   }
 
-  private async checkShop(shopId?: number, slug?: string) {
+  public async checkShop(shopId?: number, slug?: string) {
     const shop = shopId ? 
       await this.prisma.shop.findUnique({ where: { id: shopId } }) : 
       await this.prisma.shop.findFirst({ where: { slug } });
