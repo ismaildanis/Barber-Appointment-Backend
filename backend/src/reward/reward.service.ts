@@ -47,4 +47,26 @@ export class RewardService {
 
         return reward
     }
+
+    async getAvailableReward(customerId: number, slug: string) {
+        const reward = await this.prisma.reward.findFirst({
+            where: {
+                customerId: customerId,
+                shop: {
+                    slug: slug
+                },
+                status: RewardStatus.AVAILABLE
+            },
+            include: {
+                campaign: {
+                    include: {
+                        campaignServices: true
+                    }
+                }
+            }
+        })
+        if (!reward) throw new NotFoundException('Ödül bulunamadı');
+
+        return reward
+    }
 }

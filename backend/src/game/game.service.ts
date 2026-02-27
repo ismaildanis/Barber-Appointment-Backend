@@ -16,103 +16,124 @@ dayjs.extend(isoWeek);
 
 @Injectable()
 export class GameService {
-    private readonly tz = 'Europe/Istanbul';
+  private readonly tz = 'Europe/Istanbul';
 
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly shop: ShopService,
-        private readonly campaign: CampaignService,
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shop: ShopService,
+    private readonly campaign: CampaignService,
+  ) {}
 
-    ) {}
+  async spinWheel(customerId: number, slug: string) {
+    const shop = await this.shop.checkShop(undefined, slug);
+    const now = dayjs().tz(this.tz);
 
-    async spinWheel(customerId: number, slug: string) {
-        const shop = await this.shop.checkShop(undefined, slug)
-        const now = dayjs().tz(this.tz)
+    await this.checkSpinConflict(customerId, shop.id);
 
-        await this.checkSpinConflict(customerId, shop.id, now)
+    const campaigns = await this.campaign.findAll(slug);
+    const rewardCampaign = await this.rewardCalculation(campaigns, customerId, shop.id, now);
 
-        const campaigns = await this.campaign.findAll(slug)
-        const rewardCampaign = await this.rewardCalculation(campaigns, customerId, shop.id, now)
-
-        if (!rewardCampaign) {
-            throw new ConflictException('Kampanya bulunamadı, Daha sonra tekrar deneyiniz.')
-        }
-
-        try{
-            await this.prisma.$transaction(async (tx) => {
-                await tx.gameSession.create({
-                    data: {
-                        customerId: customerId,
-                        gameType: GameType.SPIN_WHEEL,
-                        shopId: shop.id,
-                        playedAt: now.format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
-                    }
-                })
-                await tx.reward.create({
-                    data: {
-                        customerId: customerId,
-                        shopId: shop.id,
-                        campaignId: rewardCampaign.id,
-                        status: 'AVAILABLE',
-                        expiresAt: now.add(7, 'day').format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
-                    }
-                })
-            })
-
-            return rewardCampaign
-
-        } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2002'
-            ) {
-                console.log(error);
-                throw new ConflictException('Bu hafta zaten çark çevirdiniz.');
-            }
-            throw new InternalServerErrorException('Çark işlemi tamamlanamadı.');
-        }    
+    if (!rewardCampaign) {
+      throw new ConflictException('Kampanya bulunamadı, Daha sonra tekrar deneyiniz.');
     }
 
-    private async rewardCalculation(campaigns: Campaign[], customerId: number, shopId: number, now: dayjs.Dayjs) {
-        const activeReward = await this.prisma.reward.findFirst({
-            where: {
-                customerId: customerId,
-                shopId: shopId,
-                status: 'AVAILABLE',
-                expiresAt: { gt: now.format('YYYY-MM-DDTHH:mm:ss.SSS[Z]') }
-            }
-        })
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.gameSession.create({
+          data: {
+            customerId: customerId,
+            campaignId: rewardCampaign.id,
+            gameType: GameType.SPIN_WHEEL,
+            shopId: shop.id,
+            playedAt: now.toDate(),
+            nextPlayAt: now.add(1, 'minute').toDate(),
+          },
+        });
 
-        if (activeReward){
-            throw new ConflictException('Zaten bir ödülünüz var, daha sonra tekrar deneyiniz.'); 
-        } 
-        
-        const totalWeight = campaigns.reduce((total, campaign) => total + campaign.wheelWeight, 0);
-        if (totalWeight <= 0) throw new ConflictException('Uygun kampanya yok.');
+        await tx.reward.create({
+          data: {
+            customerId: customerId,
+            shopId: shop.id,
+            campaignId: rewardCampaign.id,
+            status: 'AVAILABLE',
+            expiresAt: now.add(1, 'week').endOf('day').toDate(),
+          },
+        });
+      });
 
-        let r = randomInt(1, totalWeight + 1);
+      return rewardCampaign;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        console.log(error);
+        throw new ConflictException('Bu hafta zaten çark çevirdiniz.');
+      }
+      throw new InternalServerErrorException('Çark işlemi tamamlanamadı.');
+    }
+  }
 
-        for (const campaign of campaigns) {
-            r -= campaign.wheelWeight;
-            if (r <= 0) return campaign
-        }
+  async getLastSpin(customerId: number, slug: string) {
+    const shop = await this.shop.checkShop(undefined, slug);
+    const now = dayjs().tz(this.tz);
+
+    const gameSession = await this.prisma.gameSession.findFirst({
+      where: {
+        customerId: customerId,
+        gameType: GameType.SPIN_WHEEL,
+        shopId: shop.id,
+        playedAt: { lte: now.toDate() },
+      },
+      orderBy: { playedAt: 'desc' }
+    });
+
+    if (!gameSession) return null;
+
+    return gameSession;
+  }
+
+  private async rewardCalculation(campaigns: Campaign[], customerId: number, shopId: number, now: dayjs.Dayjs) {
+    const totalWeight = campaigns.reduce((total, campaign) => total + campaign.wheelWeight, 0);
+    if (totalWeight <= 0) throw new ConflictException('Uygun kampanya yok.');
+
+    let r = randomInt(1, totalWeight + 1);
+
+    for (const campaign of campaigns) {
+      r -= campaign.wheelWeight;
+      if (r <= 0) return campaign;
+    }
+  }
+
+  private async checkSpinConflict(customerId: number, shopId: number) {
+    const now = dayjs()
+
+    const activeReward = await this.prisma.reward.findFirst({
+      where: {
+        customerId: customerId,
+        shopId: shopId, 
+        status: 'AVAILABLE',
+        expiresAt: { gt: now.toDate() },
+      }, 
+    });
+
+    if (activeReward) {
+      throw new ConflictException('Zaten bir ödülünüz var, ödülünüzü kullandıktan sonra tekrar deneyiniz.');
     }
 
-    private async checkSpinConflict(customerId: number, shopId: number, now: dayjs.Dayjs) {
-        const last = await this.prisma.gameSession.findFirst({
-            where: { customerId, shopId, gameType: GameType.SPIN_WHEEL },
-            orderBy: { playedAt: 'desc' },
-            });
-            
-        if (!last) return
+    const last = await this.prisma.gameSession.findFirst({
+      where: { customerId, shopId, gameType: GameType.SPIN_WHEEL },
+      orderBy: { playedAt: 'desc' }, 
+    });
 
-        const nextSpinAt = dayjs(last.playedAt).add(7, 'day');
+    if (!last) return;
 
-        if (now.isBefore(nextSpinAt)) {
-            throw new ConflictException('Sadece Haftada bir kere çevirebilirsiniz!');
-        }
-        
-        return last
+    const nextSpinStartAt = last.nextPlayAt
+
+    if (now.isBefore(nextSpinStartAt)) {
+      throw new ConflictException('Sadece Haftada bir kere çevirebilirsiniz!');
     }
 
+    return last;
+  }
 }

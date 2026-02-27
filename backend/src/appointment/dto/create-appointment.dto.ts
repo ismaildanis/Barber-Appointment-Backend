@@ -10,6 +10,10 @@ export class CreateAppointmentDto {
     @IsInt({ each: true })
     serviceIds: number[];
 
+    @IsOptional()
+    @IsInt()
+    rewardId?: number;
+
     @IsNotEmpty()
     @IsDateString()
     appointmentStartAt: Date;

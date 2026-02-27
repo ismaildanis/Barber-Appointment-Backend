@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Appointment, DiscountType, Prisma } from '@prisma/client';
+import { Appointment, DiscountType, Prisma, Reward } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
 import { DateRangeService } from './date-range.service';
@@ -19,6 +19,8 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { PreviewAppointmentDto } from './dto/preview-appointment.dto';
 import { RewardService } from 'src/reward/reward.service';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { AnyMxRecord } from 'dns';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -80,11 +82,16 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+          select: { id: true, serviceId: true, name: true, price: true, discountedPrice: true, duration: true },
         },
         customer: {
           select: { id: true, firstName: true, lastName: true, phone: true, email: true }
-        } 
+        },
+        reward: {
+          include: {
+            campaign: { select: { id: true, name: true, discountType: true, discountValue: true } }
+          }
+        }
       }
     });
     if (!appt) throw new NotFoundException('Randevu bulunamadı');
@@ -157,10 +164,15 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+          select: { id: true, serviceId: true, name: true, price: true, discountedPrice: true, duration: true },
         },
         shop: {
           select: { id: true, name: true },
+        },
+        reward: {
+          include: {
+            campaign: { select: { id: true, name: true, discountType: true, discountValue: true } }
+          }
         }
       }
     });
@@ -176,10 +188,15 @@ export class AppointmentService {
           select: { id: true, firstName: true, lastName: true },
         },
         appointmentServices: {
-          select: { id: true, serviceId: true, name: true, price: true, duration: true },
+          select: { id: true, serviceId: true, name: true, price: true, discountedPrice: true, duration: true },
         },
         shop: {
           select: { id: true, name: true },
+        },
+        reward: {
+          include: {
+            campaign: { select: { id: true, name: true, discountType: true, discountValue: true } }
+          }
         }
       }
     });
@@ -231,12 +248,9 @@ export class AppointmentService {
     return appt ?? null;
   }
 
-  
-
   async create(dto: any, customerId: number) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new UnauthorizedException('Kullanıcı bulunamadı');
-    
     const requestStartAt = this.timeRange.validateDateFormat(dto.appointmentStartAt);
 
     this.timeRange.validateNotPast(requestStartAt);
@@ -256,7 +270,6 @@ export class AppointmentService {
       where: { id: dto.barberId },
       include: { shop: true },
     });
-
     if (!barber) throw new NotFoundException('Berber bulunamadı');
     if (!barber.active) throw new ConflictException('Bu berber şuanda aktif değil ve randevu alınamaz');
     if (!barber.shop.active) throw new ConflictException('Bu işletme aktif değil');
@@ -273,8 +286,39 @@ export class AppointmentService {
       select: { id: true, name: true, price: true, duration: true },
     });
 
-    if (!services.length) throw new NotFoundException("Hizmet bulunamadı");
-    if (services.length !== dto.serviceIds.length) throw new NotFoundException("Bazı hizmetler yok");
+    if (!services.length) throw new NotFoundException('Hizmet bulunamadı');
+    if (services.length !== dto.serviceIds.length) throw new NotFoundException('Bazı hizmetler yok');
+
+    let reward: any = null;
+    let eligibleIds = new Set<number>();
+
+    if (dto.rewardId) {
+      reward = await this.reward.getReward(customerId, barber.shop.slug, dto.rewardId);
+      if (reward.status !== 'AVAILABLE') throw new ConflictException('Ödül kullanılamaz');
+      if (dayjs(reward.expiresAt).isBefore(dayjs())) throw new ConflictException('Ödül süresi dolmuş');
+
+      const campaignServiceIds = reward.campaign.campaignServices.map((cs: any) => cs.serviceId);
+      eligibleIds = new Set(campaignServiceIds);
+    }
+
+    const discountType = reward?.campaign?.discountType;
+    const discountValue = reward?.campaign?.discountValue ?? new Prisma.Decimal(0);
+
+    const pricedServices = services.map((s) => {
+      let finalPrice = s.price;
+
+      if (reward && eligibleIds.has(s.id)) {
+        if (discountType === 'PERCENTAGE') {
+          finalPrice = s.price.minus(s.price.mul(discountValue).div(100));
+        } else if (discountType === 'FIXED_AMOUNT') {
+          finalPrice = Prisma.Decimal.max(s.price.minus(discountValue), new Prisma.Decimal(0));
+        }
+        finalPrice = finalPrice.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      }
+
+      return { ...s, finalPrice };
+    });
+
     const totalDuration = services.reduce((acc, s) => acc + s.duration, 0);
     const apptStartAt = dayjs(dto.appointmentStartAt);
     const apptEndAt = apptStartAt.add(totalDuration, "minute");
@@ -300,14 +344,22 @@ export class AppointmentService {
           },
         });
         await tx.appointmentService.createMany({
-          data: services.map((s) => ({ 
+          data: pricedServices.map((s) => ({ 
             appointmentId: appt.id, 
             serviceId: s.id, 
             name: s.name,
             price: s.price,
+            discountedPrice: s.finalPrice ?? null,
             duration: s.duration
           })),
         });
+
+        if (reward) {
+          await tx.reward.update({
+            where: { id: reward.id },
+            data: { status: 'USED', usedAt: new Date(), appointmentId: appt.id },
+          });
+        }
       });
 
       const dateStr = apptStartAt.toDate().toLocaleDateString('tr-TR', {
@@ -419,51 +471,32 @@ export class AppointmentService {
   }
 
   async preview(dto: PreviewAppointmentDto, customerId: number) {
+    const { 
+      campaign, 
+      selectedServices, 
+      reward, 
+      eligibilityServices 
+    } = await this.checkEligibleServices(customerId, dto.rewardId, dto.serviceIds, dto.shopSlug);
 
-    const reward = await this.reward.getReward(customerId, dto.shopSlug, dto.rewardId);
-    const campaign = reward.campaign
-    const campaignServices = reward.campaign.campaignServices.map((cs) => cs.serviceId);
-
-    const selectedServices = await this.prisma.service.findMany({
-      where: { id: { in: dto.serviceIds } },
-      select: { id: true, name: true, price: true, duration: true },
-    });
-    if (!selectedServices.length) throw new NotFoundException("Hizmet bulunamadı");
-    if (selectedServices.length !== dto.serviceIds.length) throw new NotFoundException("Bazı hizmetler yok");
-
-    let eligibilityServices: number[] = [];
-    for (const id of dto.serviceIds) {
-      if(campaignServices.includes(id)) {
-        eligibilityServices.push(id)
-      }
-    }
-    
-    const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration, 0);
-    const totalPrice = selectedServices.reduce((acc, s) => acc.plus(s.price), new Prisma.Decimal(0));
-    const eligibilityServicesPrice = selectedServices
-      .filter((s) => eligibilityServices.includes(s.id))
-      .reduce((acc, s) => acc.plus(s.price), new Prisma.Decimal(0));
-    const discountType = reward.campaign.discountType;
-    const discount = reward.campaign.discountValue ?? new Prisma.Decimal(0);;
-
-    let totalDiscount; 
-    if (discountType == 'PERCENTAGE') {
-      totalDiscount = eligibilityServicesPrice.mul(discount).div(100);
-    } 
-    else if (discountType == 'FIXED_AMOUNT') {
-      totalDiscount = Prisma.Decimal.min(discount, eligibilityServicesPrice);
-    }
-
-    const newPrice = Prisma.Decimal.max(totalPrice.minus(totalDiscount), new Prisma.Decimal(0));
+    const { 
+      newPrice, 
+      discountedServicesPrices, 
+      totalPrice, 
+      totalDuration, 
+      totalDiscount
+    } = await this.calculateServicePrice(selectedServices, eligibilityServices, reward);
 
     return {
       campaign,
-      totalPrice,
-      newPrice,
-      totalDiscount,
+      totalPrice: totalPrice.toFixed(2),
+      newPrice: newPrice.toFixed(2),
+      totalDiscount: totalDiscount.toFixed(2),
+      discountedServicesPrices: discountedServicesPrices.map(s => ({
+        ...s,
+        price: s.price.toFixed(2),
+      })),
       totalDuration,
-    }
-
+    };
   }
 
   async findOneForBarber(barberId: number, appointmentId: number) {
@@ -480,10 +513,15 @@ export class AppointmentService {
       },  
       include: { 
         appointmentServices: {
-          select: { id: true, serviceId: true, name: true, price: true, duration: true }
+          select: { id: true, serviceId: true, name: true, price: true, discountedPrice: true, duration: true }
         },
         customer: {
           select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+        },
+        reward: {
+          include: {
+            campaign: { select: { id: true, name: true, discountType: true, discountValue: true } }
+          }
         }
       },
     });
@@ -815,5 +853,96 @@ export class AppointmentService {
     }
     throw e;
   }
+  private async checkEligibleServices(customerId: number, rewardId: number, serviceIds: number[], shopSlug: string) {
+    const selectedServices = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+      select: { id: true, name: true, price: true, duration: true },
+    });
+
+    if (!selectedServices.length) throw new NotFoundException("Hizmet bulunamadı");
+    if (selectedServices.length !== serviceIds.length) throw new NotFoundException("Bazı hizmetler yok");
+
+    const reward = await this.reward.getReward(customerId, shopSlug, rewardId);
+    const campaign = reward.campaign
+    const campaignServices = reward.campaign.campaignServices.map((cs) => cs.serviceId);
+
+    let eligibilityServices: number[] = [];
+    for (const id of serviceIds) {
+      if(campaignServices.includes(id)) {
+        eligibilityServices.push(id)
+      }
+    }
+    if (eligibilityServices.length == 0) throw new BadRequestException("Seçilen hizmetlerde kampanya bulunmuyor!");
+    
+    return { campaign, selectedServices, reward, eligibilityServices };
+
+  }
+
+    private calculateServicePrice(
+      selectedServices: { id: number; name: string; price: Prisma.Decimal; duration: number }[],
+      eligibilityServices: number[],
+      reward: any,
+    ) {
+      const discountType = reward.campaign.discountType;
+      const discount = reward.campaign.discountValue ?? new Prisma.Decimal(0);
+
+      const totalPrice = selectedServices.reduce((acc, s) => acc.plus(s.price), new Prisma.Decimal(0));
+      const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration, 0);
+
+      const eligibleServices = selectedServices.filter((s) => eligibilityServices.includes(s.id));
+
+      const eligibleOriginalTotal = eligibleServices.reduce(
+        (acc, s) => acc.plus(s.price),
+        new Prisma.Decimal(0),
+      );
+
+      let discountedServicesPrices: { id: number; name: string; price: Prisma.Decimal; duration: number }[] = [];
+
+      if (discountType === 'PERCENTAGE') {
+        discountedServicesPrices = eligibleServices.map((s) => {
+          const discounted = s.price
+            .minus(s.price.mul(discount).div(100))
+            .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+          return { ...s, price: discounted };
+        });
+      } else if (discountType === 'FIXED_AMOUNT') {
+        let remaining = Prisma.Decimal.min(discount, eligibleOriginalTotal);
+
+        discountedServicesPrices = eligibleServices.map((s) => {
+          if (remaining.lte(0)) return { ...s, price: s.price };
+
+          const applied = Prisma.Decimal.min(s.price, remaining);
+          remaining = remaining.minus(applied);
+
+          const discounted = s.price
+            .minus(applied)
+            .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+          return { ...s, price: discounted };
+        });
+      }
+
+      const eligibleDiscountedTotal = discountedServicesPrices.reduce(
+        (acc, s) => acc.plus(s.price),
+        new Prisma.Decimal(0),
+      );
+
+      const totalDiscount = eligibleOriginalTotal
+        .minus(eligibleDiscountedTotal)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      const newPrice = totalPrice
+        .minus(totalDiscount)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      return {
+        totalPrice: totalPrice.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+        newPrice,
+        totalDiscount,
+        discountedServicesPrices,
+        totalDuration,
+      };
+    }
 
 }
