@@ -14,15 +14,23 @@ export class CampaignController {
     return this.campaignService.create(req.admin.shopId, dto);
   }
 
+  @Get('shop/admin')
+  @UseGuards(JwtAdminGuard)
+  async findForAdmin(@Req() req: any) {
+    return this.campaignService.findForAdmin(req.admin.shopId);
+  }
+
+  @Get('shop/admin/:id')
+  @UseGuards(JwtAdminGuard)
+  async findOneForAdmin(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.campaignService.findOneForAdmin(req.admin.shopId, id);
+  }
+
   @Get('shop/:slug')
   async findAll(@Param('slug') slug: string) {
     return this.campaignService.findAll(slug);
   }
 
-  @Get('id/:id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.campaignService.findOne(id);
-  }
 
   @Put(':id')
   @UseGuards(JwtAdminGuard)

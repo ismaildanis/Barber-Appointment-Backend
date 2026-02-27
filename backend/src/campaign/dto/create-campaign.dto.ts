@@ -1,5 +1,5 @@
 import { DiscountType } from "@prisma/client";
-import { ArrayNotEmpty, IsArray, IsBoolean, IsDateString, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateCampaignDto {
     @IsNotEmpty()
@@ -11,11 +11,11 @@ export class CreateCampaignDto {
     description: string
 
     @IsNotEmpty()
-    @IsString()
+    @IsEnum(DiscountType)
     discountType: DiscountType
 
     @IsOptional()
-    @IsString()
+    @IsNumber()
     discountValue: string
 
     @IsArray()
@@ -27,7 +27,7 @@ export class CreateCampaignDto {
     @IsDateString()
     startAt: Date
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsDateString()
     endAt: Date
 

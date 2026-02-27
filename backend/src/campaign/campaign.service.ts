@@ -24,8 +24,11 @@ export class CampaignService {
     await this.checkSimilarity(dto.name, shopId, dto.discountType, dto.discountValue);
  
     const startDate = dayjs(dto.startAt).startOf('day').toDate();
-    const endDate = dayjs(dto.endAt).endOf('day').toDate();
-    if (startDate > endDate) throw new ConflictException('Bitiş tarihi başlangıç tarihinden önce olmalıdır.');
+    const endDate = dto.endAt ? dayjs(dto.endAt).endOf('day').toDate() : null; // ← null kontrolü
+
+    if (endDate && startDate > endDate) {
+      throw new ConflictException('Bitiş tarihi başlangıç tarihinden önce olmalıdır.');
+    }
 
     const services = await this.prisma.service.findMany({
       where: { id: { in: dto.serviceIds }, shopId },
@@ -82,9 +85,22 @@ export class CampaignService {
     return campaigns
   }
 
-  async findOne(id: number) {
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id },
+  async findForAdmin(shopId: number) {
+    const campaign = await this.prisma.campaign.findMany({
+      where: { shopId },
+      include: {
+        campaignServices: {
+          include: { service: true }
+        }
+      }
+    });
+    if (!campaign) throw new NotFoundException('Kampanya bulunamadı');
+    return campaign;
+  }
+
+  async findOneForAdmin(shopId: number, id: number) {
+    const campaign = await this.prisma.campaign.findMany({
+      where: { shopId, id },
       include: {
         campaignServices: {
           include: { service: true }
