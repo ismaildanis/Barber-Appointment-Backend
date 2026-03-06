@@ -10,6 +10,7 @@ import { BarberCancelDto } from './dto/barber-cancel.dto';
 import { BreakDto } from './dto/break.dto';
 import { Status } from '@prisma/client';
 import { AppointmentRange } from './enum/appointment-range.enum';
+import { PreviewAppointmentDto } from './dto/preview-appointment.dto';
 
 @Controller('appointment')
 export class AppointmentController 
@@ -78,6 +79,12 @@ export class AppointmentController
             throw new BadRequestException('Tarih zorunludur.');
         }
         return this.appointmentService.getAvailableHours(barberId, date)
+    }
+
+    @Post('preview')
+    @UseGuards(JwtAuthGuard)
+    async preview(@Body() dto: PreviewAppointmentDto, @Req() req: any) {
+        return await this.appointmentService.preview(dto, req.customer!.sub);
     }
 
     @Get('last')

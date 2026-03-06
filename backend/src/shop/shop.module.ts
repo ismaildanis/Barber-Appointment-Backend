@@ -9,5 +9,6 @@ import { UploadModule } from 'src/upload/upload.module';
   imports: [UploadModule],
   controllers: [ShopController],
   providers: [ShopService, PlatformGuard, JwtUnifiedGuard],
+  exports: [ShopService],
 })
 export class ShopModule {}

@@ -28,6 +28,8 @@ model Customer {
   updatedAt    DateTime      @updatedAt
 
   appointments Appointment[]
+  rewards      Reward[]
+  gameSessions GameSession[]
 }
 
 model Barber {
@@ -87,6 +89,9 @@ model Shop {
   appointments Appointment[]
   holidayDates HolidayDate[]
   services  Service[]
+  campaigns Campaign[]
+  rewards Reward[]
+  gameSessions GameSession[]
 }
 
 model Appointment {
@@ -107,13 +112,12 @@ model Appointment {
   shop          Shop       @relation(fields: [shopId], references: [id])
   customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   barber        Barber     @relation(fields: [barberId], references: [id])
-
+  reward        Reward? 
   appointmentServices AppointmentService[]
 
   @@index([barberId, appointmentStartAt])
   @@index([appointmentStartAt, appointmentEndAt])
 }
-
 
 model Service {
   id           Int           @id @default(autoincrement())
@@ -127,8 +131,11 @@ model Service {
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
 
-  appointmentServices AppointmentService[]
   shop        Shop @relation(fields: [shopId], references: [id])
+
+  appointmentServices AppointmentService[]
+  campaignServices CampaignService[]
+
 }
 
 model AppointmentService {
@@ -137,6 +144,7 @@ model AppointmentService {
   serviceId     Int
   name          String
   price         Decimal      @db.Decimal(10, 2)
+  discountedPrice      Decimal?     @db.Decimal(10, 2)
   duration      Int
 
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
@@ -147,6 +155,93 @@ enum Range {
   MIN15
   MIN30
 }
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Campaign {
+  id        Int    @id @default(autoincrement())
+  shopId    Int
+  name      String
+  description String?
+  discountType  DiscountType
+  discountValue Decimal? @db.Decimal(10, 2)
+  startAt DateTime
+  endAt   DateTime?
+  wheelEnabled Boolean @default(true)
+  wheelWeight Int @default(10)
+  active  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id])
+  rewards Reward[]
+  campaignServices CampaignService[]
+  gameSessions GameSession[]
+
+  @@index([shopId, active, wheelEnabled, startAt, endAt])
+}
+
+model CampaignService {
+  id         Int       @id @default(autoincrement())
+  campaignId  Int
+  serviceId   Int
+
+  campaign    Campaign  @relation(fields: [campaignId], references: [id])
+  service     Service   @relation(fields: [serviceId], references: [id])
+
+  @@unique([campaignId, serviceId])
+}
+
+enum RewardStatus {
+  AVAILABLE
+  USED
+  EXPIRED
+}
+
+model Reward {
+  id            Int          @id @default(autoincrement())
+  shopId        Int
+  customerId    Int
+  campaignId    Int
+  appointmentId Int?
+  status        RewardStatus @default(AVAILABLE)
+  usedAt        DateTime?    
+  expiresAt     DateTime     
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt 
+
+  shop          Shop         @relation(fields: [shopId], references: [id])
+  customer      Customer     @relation(fields: [customerId], references: [id])
+  campaign      Campaign     @relation(fields: [campaignId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, customerId, status])
+  @@unique([appointmentId])
+}
+
+enum GameType {
+  SPIN_WHEEL
+}
+
+model GameSession {
+  id         Int      @id @default(autoincrement())
+  shopId     Int
+  customerId Int
+  campaignId  Int
+  gameType   GameType
+  playedAt   DateTime 
+  nextPlayAt DateTime?
+
+  shop       Shop     @relation(fields: [shopId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  @@index([shopId, customerId, gameType, playedAt])
+}
+
 
 model WorkingHour {
   id         Int    @id @default(autoincrement())

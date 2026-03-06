@@ -10,8 +10,10 @@ import { WorkingHourService } from './working-hour.service';
 import { AppointmentCron } from './cron/appointment.cron';
 import { BarberBreakCron } from './cron/barber-break.cron';
 import { PushService } from './push-notifications.service';
+import { RewardModule } from 'src/reward/reward.module';
 
 @Module({
+  imports: [RewardModule],
   controllers: [AppointmentController],
   providers: [
     WorkingHourService,
